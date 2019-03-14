@@ -103,7 +103,7 @@
 <meta property="og:site_name" content="SHIELD">
 <meta property="og:description" content="机器学习现在主要的流派是 统计学习统计学习的主要特点:   统计学习以计算机及网络为平台,建立在计算机及网络之上 统计学习以数据为研究对象,是数据驱动的学科 统计学习的目的是对数据进行预测和分析 统计学习以方法为中心,构建模型并应用模型进行预测和分析 统计学习是概率论,统计学,信息论,计算理论,最优化理论,计算机科学多个领域的交叉学科,并且在发展中逐步形成了独自的理论体系和方法论">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-01-22T15:33:46.203Z">
+<meta property="og:updated_time" content="2019-01-23T16:08:15.257Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Statistical_Learning">
 <meta name="twitter:description" content="机器学习现在主要的流派是 统计学习统计学习的主要特点:   统计学习以计算机及网络为平台,建立在计算机及网络之上 统计学习以数据为研究对象,是数据驱动的学科 统计学习的目的是对数据进行预测和分析 统计学习以方法为中心,构建模型并应用模型进行预测和分析 统计学习是概率论,统计学,信息论,计算理论,最优化理论,计算机科学多个领域的交叉学科,并且在发展中逐步形成了独自的理论体系和方法论">
@@ -240,7 +240,7 @@
       
     
 
-    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">101</span></a>
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">108</span></a>
 
   </li>
 
@@ -352,7 +352,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2019-01-22 23:33:46" itemprop="dateModified" datetime="2019-01-22T23:33:46+08:00">2019-01-22</time>
+                <time title="修改时间：2019-01-24 00:08:15" itemprop="dateModified" datetime="2019-01-24T00:08:15+08:00">2019-01-24</time>
               
             
           </span>
@@ -390,6 +390,17 @@
 
           
           
+            <span id="/2019/01/21/math-statistical_learning/" class="leancloud_visitors" data-flag-title="Statistical_Learning">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读次数：</span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
 
           
 
@@ -404,7 +415,7 @@
                 
                   <span class="post-meta-item-text">本文字数：</span>
                 
-                <span title="本文字数">6.5k</span>
+                <span title="本文字数">6.6k</span>
               
 
               
@@ -506,6 +517,9 @@ R _ { \mathrm { srm } } ( f ) = \frac { 1 } { N } \sum _ { i = 1 } ^ { N } L \le
 <p>统计学习的目的是使学到的模型不仅对已知数据而且对未知数据都能有很好的预测能力。当损失函数给定时，基于损失函数的模型的训练误差（training error）和模型的测试误差（test error）就自然成为学习方法评估的标准。通常将学习方法对未知数据的预测能力称为泛化能力</p>
 <h1 id="过拟合"><a href="#过拟合" class="headerlink" title="过拟合"></a>过拟合</h1><p>如果一味追求提高对训练数据的预测能力，所选模型的复杂度则往往会比真模型更高。这种现象称为过拟合（over-fitting）</p>
 <p>过拟合是指学习时选择的模型所包含的参数过多，以致于出现这一模型对已知数据预测得很好,但对未知数据预测得很差的现象。可以说模型选择旨在避免过拟合并提高模型的预测能力。</p>
+<h1 id="范数"><a href="#范数" class="headerlink" title="范数"></a>范数</h1><p>L0范数($||w||_0$),是指向量$w$中非0的元素的个数.</p>
+<p>L1范数($||w||_0$),指向量中各个元素绝对值之和</p>
+<p>L2范数($||w||_0$),又叫“岭回归”（Ridge Regression）,指向量中各元素的平方和然后开根号。</p>
 <h1 id="正则化"><a href="#正则化" class="headerlink" title="正则化"></a>正则化</h1><p>正则化项一般是模型复杂度的单调递增函数，模型越复杂，正则化值就越大.</p>
 <p>正则化项可以取不同的形式。例如，回归问题中，损失函数是平方损失，正则化项可以是参数向量的L2范数($||w||$表示参数向量w的$L_2$范数):</p>
 <script type="math/tex; mode=display">
@@ -655,7 +669,7 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">101</span>
+                    <span class="site-state-item-count">108</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -665,7 +679,7 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
                 
                 
                 <div class="site-state-item site-state-categories">
-                  <a href="/Database/index.html">
+                  <a href="/Algothrim/index.html">
                     
                     
                       
@@ -720,7 +734,9 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
                     
                       
                     
-                    <span class="site-state-item-count">26</span>
+                      
+                    
+                    <span class="site-state-item-count">27</span>
                     <span class="site-state-item-name">分类</span>
                   </a>
                 </div>
@@ -784,7 +800,7 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#loss-function-损失函数-和cost-function-风险函数"><span class="nav-number">1.</span> <span class="nav-text">loss function(损失函数)和cost function(风险函数)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#empirical-risk-minimization-and-structural-risk-minimization"><span class="nav-number">2.</span> <span class="nav-text">empirical risk minimization and  structural risk minimization</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ERM"><span class="nav-number">2.1.</span> <span class="nav-text">ERM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SRM"><span class="nav-number">2.2.</span> <span class="nav-text">SRM</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#过拟合"><span class="nav-number">3.</span> <span class="nav-text">过拟合</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#正则化"><span class="nav-number">4.</span> <span class="nav-text">正则化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#交叉验证"><span class="nav-number">5.</span> <span class="nav-text">交叉验证</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#生成模型与判别模型"><span class="nav-number">6.</span> <span class="nav-text">生成模型与判别模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#分类问题"><span class="nav-number">7.</span> <span class="nav-text">分类问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#标注问题"><span class="nav-number">8.</span> <span class="nav-text">标注问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#回归问题"><span class="nav-number">9.</span> <span class="nav-text">回归问题</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#loss-function-损失函数-和cost-function-风险函数"><span class="nav-number">1.</span> <span class="nav-text">loss function(损失函数)和cost function(风险函数)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#empirical-risk-minimization-and-structural-risk-minimization"><span class="nav-number">2.</span> <span class="nav-text">empirical risk minimization and  structural risk minimization</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ERM"><span class="nav-number">2.1.</span> <span class="nav-text">ERM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SRM"><span class="nav-number">2.2.</span> <span class="nav-text">SRM</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#过拟合"><span class="nav-number">3.</span> <span class="nav-text">过拟合</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#范数"><span class="nav-number">4.</span> <span class="nav-text">范数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#正则化"><span class="nav-number">5.</span> <span class="nav-text">正则化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#交叉验证"><span class="nav-number">6.</span> <span class="nav-text">交叉验证</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#生成模型与判别模型"><span class="nav-number">7.</span> <span class="nav-text">生成模型与判别模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#分类问题"><span class="nav-number">8.</span> <span class="nav-text">分类问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#标注问题"><span class="nav-number">9.</span> <span class="nav-text">标注问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#回归问题"><span class="nav-number">10.</span> <span class="nav-text">回归问题</span></a></li></ol></div>
             
 
           </div>
@@ -816,7 +832,7 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
       <i class="fa fa-area-chart"></i>
     </span>
     
-    <span title="站点总字数">107k</span>
+    <span title="站点总字数">140k</span>
   
 
   
@@ -825,7 +841,7 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
       <i class="fa fa-coffee"></i>
     </span>
     
-    <span title="站点阅读时长">1:37</span>
+    <span title="站点阅读时长">2:08</span>
   
 </div>
 
@@ -844,6 +860,32 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
 
 
         
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+  
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
 
 
 
@@ -961,6 +1003,71 @@ F_1 = \frac{2TP}{2TP+FP+FN}</script><p>precision和recall都高时，$F_1$值也
 
 
   
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log(`Failed to save Visitor num, with error message: ${responseJSON.error}`);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log(`LeanCloud Counter Error: ${responseJSON.code} ${responseJSON.error}`);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+                'X-LC-Key': '1Qx8FFm1TFsG2XBlkjybkEUG',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
 
   
 

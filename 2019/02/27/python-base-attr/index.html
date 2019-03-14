@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=6.7.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.7.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.7.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="在 Python 中，数据的属性和处理数据的方法统称属性（attribute）。其实，方法只是可调用的属性。除了这二者之外，我们还可以创建特性（property），在不改变类接口的前提下，使用存取方法（即读值方法和设值方法）修改数据属性">
+<meta property="og:type" content="article">
+<meta property="og:title" content="python-base-attr">
+<meta property="og:url" content="https://www.svz7.cn/2019/02/27/python-base-attr/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="在 Python 中，数据的属性和处理数据的方法统称属性（attribute）。其实，方法只是可调用的属性。除了这二者之外，我们还可以创建特性（property），在不改变类接口的前提下，使用存取方法（即读值方法和设值方法）修改数据属性">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-03-08T13:42:11.556Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="python-base-attr">
+<meta name="twitter:description" content="在 Python 中，数据的属性和处理数据的方法统称属性（attribute）。其实，方法只是可调用的属性。除了这二者之外，我们还可以创建特性（property），在不改变类接口的前提下，使用存取方法（即读值方法和设值方法）修改数据属性">
+
+
+
+
+
+
+  <link rel="canonical" href="https://www.svz7.cn/2019/02/27/python-base-attr/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>python-base-attr | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">108</span></a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://www.svz7.cn/2019/02/27/python-base-attr/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">python-base-attr
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-02-27 11:33:09" itemprop="dateCreated datePublished" datetime="2019-02-27T11:33:09+08:00">2019-02-27</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-03-08 21:42:11" itemprop="dateModified" datetime="2019-03-08T21:42:11+08:00">2019-03-08</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a></span>
+
+                
+                
+                  ，
+                
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Python/base/" itemprop="url" rel="index"><span itemprop="name">base</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+            <span id="/2019/02/27/python-base-attr/" class="leancloud_visitors" data-flag-title="python-base-attr">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读次数：</span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">本文字数：</span>
+                
+                <span title="本文字数">4.6k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">4 分钟</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>在 Python 中，数据的属性和处理数据的方法统称属性（attribute）。其实，方法只是可调用的属性。除了这二者之外，我们还可以创建特性（property），在不改变类接口的前提下，使用存取方法（即读值方法和设值方法）修改数据属性<br><a id="more"></a></p>
+<h1 id="property"><a href="#property" class="headerlink" title="property"></a>property</h1><p><code>property</code>可以把一个实例方法变成其同名属性，以支持.号访问，它亦可标记设置限制，加以规范<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self._t1=<span class="number">0</span></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">t1</span><span class="params">(self)</span>:</span></span><br><span class="line">        print(<span class="string">'getter'</span>)</span><br><span class="line">        <span class="keyword">return</span> self._t1</span><br><span class="line"></span><br><span class="line"><span class="meta">    @t1.setter</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">t1</span><span class="params">(self,value)</span>:</span></span><br><span class="line">        print(<span class="string">'setter'</span>)</span><br><span class="line">        self._t1 = value</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">a = A()</span><br><span class="line">a.t1=<span class="number">123</span></span><br><span class="line">print(a.t1)</span><br><span class="line"><span class="comment">###</span></span><br><span class="line">setter</span><br><span class="line">getter</span><br><span class="line"><span class="number">123</span></span><br><span class="line"></span><br><span class="line">也可以老式写法</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self._t1=<span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">t1_getter</span><span class="params">(self)</span>:</span></span><br><span class="line">        print(<span class="string">'getter'</span>)</span><br><span class="line">        <span class="keyword">return</span> self._t1</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">t1_setter</span><span class="params">(self,value)</span>:</span></span><br><span class="line">        print(<span class="string">'setter'</span>)</span><br><span class="line">        self._t1 = value</span><br><span class="line">    t1 = property(t1_getter,t1_setter)</span><br></pre></td></tr></table></figure></p>
+<p>除了特性，Python 还提供了丰富的 API，用于控制属性的访问权限，以及实现动态属性。使用点号访问属性时（如 <code>obj.attr</code>），Python 解释器会调用特殊的方法（如 <code>__getattr__</code> 和 <code>__setattr__</code>）计算属性。用户自己定义的类可以通过 <code>__getattr__</code> 方法实现“虚拟属性”，当访问不存在的属性时（如 <code>obj.no_such_attribute</code>），即时计算属性的值。</p>
+<h1 id="attr"><a href="#attr" class="headerlink" title="attr"></a>attr</h1><h2 id="dict"><a href="#dict" class="headerlink" title="__dict__"></a><code>__dict__</code></h2><p>　　一个映射，存储对象或类的可写属性。有 <code>__dict__</code> 属性的对象，任何时候都能随意设置新属性。如果类有 <code>__slots__</code> 属性，它的实例可能没有 <code>__dict__</code> 属性。</p>
+<h2 id="slots"><a href="#slots" class="headerlink" title="__slots__"></a><code>__slots__</code></h2><p>　　类可以定义这个这属性，限制实例能有哪些属性。<code>__slots__</code> 属性的值是一个字符串组成的元组，指明允许有的属性。如果 <code>__slots__</code> 中没有 <code>__dict__</code>，那么该类的实例没有 <code>__dict__</code> 属性，实例只允许有指定名称的属性</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>:</span></span><br><span class="line">    __slots__ = [<span class="string">'a'</span>,<span class="string">'b'</span>]</span><br><span class="line"></span><br><span class="line">a = A()</span><br><span class="line">a.a = <span class="number">1</span></span><br><span class="line">a.b = <span class="number">2</span></span><br><span class="line">a.c = <span class="number">3</span></span><br><span class="line"><span class="comment">###</span></span><br><span class="line">AttributeError: <span class="string">'A'</span> object has no attribute <span class="string">'c'</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>:</span></span><br><span class="line">    __slots__ = (<span class="string">'__dict__'</span>)</span><br><span class="line"></span><br><span class="line">a = A()</span><br><span class="line">a.a = <span class="number">1</span></span><br><span class="line">a.b = <span class="number">2</span></span><br><span class="line">a.c = <span class="number">3</span></span><br><span class="line"><span class="comment">###</span></span><br><span class="line">不报错</span><br></pre></td></tr></table></figure>
+<h2 id="一些处理属性的内置函数"><a href="#一些处理属性的内置函数" class="headerlink" title="一些处理属性的内置函数"></a>一些处理属性的内置函数</h2><h3 id="dir-object"><a href="#dir-object" class="headerlink" title="dir([object])"></a><code>dir([object])</code></h3><p>　　列出对象的大多数属性。<a href="https://docs.python.org/3/library/functions.html#dir" target="_blank" rel="noopener">官方文档</a>说，dir 函数的目的是交互式使用，因此没有提供完整的属性列表，只列出一组“重要的”属性名。<code>dir</code> 函数能审查有或没有<code>__dict__</code> 属性的对象。<code>dir</code> 函数不会列出 <code>__dict__</code> 属性本身，但会列出其中的键。<code>dir</code> 函数也不会列出类的几个特殊属性，例如 <code>__mro__</code>、<code>__bases__</code> 和 <code>__name__</code>。如果没有指定可选的 <code>object</code> 参数，dir 函数会列出当前作用域中的名称。</p>
+<h3 id="getattr-object-name-default"><a href="#getattr-object-name-default" class="headerlink" title="getattr(object, name[, default])"></a><code>getattr(object, name[, default])</code></h3><p>　　从 <code>object</code> 对象中获取 <code>name</code> 字符串对应的属性。获取的属性可能来自对象所属的类或超类。如果没有指定的属性，<code>getattr</code> 函数抛出 <code>AttributeError</code> 异常，或者返回 <code>default</code> 参数的值（如果设定了这个参数的话）。</p>
+<h3 id="hasattr-object-name"><a href="#hasattr-object-name" class="headerlink" title="hasattr(object, name)"></a><code>hasattr(object, name)</code></h3><p>　　如果 <code>object</code> 对象中存在指定的属性，或者能以某种方式（例如继承）通过 <code>object</code> 对象获取指定的属性，返回<code>True</code>。<a href="https://docs.python.org/3/library/functions.html#hasattr" target="_blank" rel="noopener">官方文档</a>说道：“这个函数的实现方法是调用 <code>getattr(object, name)</code>函数，看看是否抛出 <code>AttributeError</code> 异常。
+　</p>
+<h3 id="setattr-object-name-value"><a href="#setattr-object-name-value" class="headerlink" title="setattr(object, name, value)"></a><code>setattr(object, name, value)</code></h3><p>　　把 <code>object</code> 对象指定属性的值设为 <code>value</code>，前提是 <code>object</code> 对象能接受那个值。这个函数可能会创建一个新属性，或者覆盖现有的属性。</p>
+<h3 id="vars-object"><a href="#vars-object" class="headerlink" title="vars([object])"></a><code>vars([object])</code></h3><p>　　返回 object 对象的 <code>__dict__</code> 属性；如果实例所属的类定义了 <code>__slots__</code> 属性，实例没有 <code>__dict__</code> 属性，那么 <code>vars</code> 函数不能处理那个实例（相反，<code>dir</code> 函数能处理这样的实例）。如果没有指定参数，那么 <code>vars()</code> 函数的作用与 <code>locals()</code> 函数一样：返回表示本地作用域的字典。
+　　</p>
+<h2 id="处理属性的特殊方法"><a href="#处理属性的特殊方法" class="headerlink" title="处理属性的特殊方法"></a>处理属性的特殊方法</h2><p>　　使用点号或内置的 <code>getattr</code>、<code>hasattr</code>和 <code>setattr</code> 函数存取属性都会触发相应的特殊方法。但是，直接通过实例的 <code>__dict__</code> 属性读写属性不会触发这些特殊方法——如果需要，通常会使用这种方式跳过特殊方法。</p>
+<h3 id="getattribute-obj-39-attr-39"><a href="#getattribute-obj-39-attr-39" class="headerlink" title="__getattribute__(obj, &#39;attr&#39;)"></a><code>__getattribute__(obj, &#39;attr&#39;)</code></h3><p>　　<code>obj.attr</code> 和 <code>getattr(obj, &#39;attr&#39;, 42)</code> 都会触发 <code>Class.__getattribute__(obj, &#39;attr&#39;)</code> 方法。</p>
+<h3 id="delattr-self-name"><a href="#delattr-self-name" class="headerlink" title="__delattr__(self, name)"></a><code>__delattr__(self, name)</code></h3><p>　　只要使用 del 语句删除属性，就会调用这个方法。例如，<code>del obj.attr</code> 语句触发 <code>Class.__delattr__(obj, &#39;attr&#39;)</code> 方法。</p>
+<h3 id="dir-self"><a href="#dir-self" class="headerlink" title="__dir__(self)"></a><code>__dir__(self)</code></h3><p>　　把对象传给 <code>dir</code> 函数时调用，列出属性。例如，<code>dir(obj)</code> 触发 <code>Class.__dir__(obj)</code> 方法。</p>
+<h3 id="getattr-self-name"><a href="#getattr-self-name" class="headerlink" title="__getattr__(self, name)"></a><code>__getattr__(self, name)</code></h3><p>　　仅当获取指定的属性失败，搜索过 <code>obj</code>、<code>Class</code> 和超类之后调用。表达式 <code>obj.no_such_attr、getattr(obj, &#39;no_such_attr&#39;)</code> 和 <code>hasattr(obj, &#39;no_such_attr&#39;)</code> 可能会触发 <code>Class.__getattr__(obj, &#39;no_such_attr&#39;)</code> 方法，但是，仅当在 <code>obj</code>、<code>Class</code> 和超类中找不到指定的属性时才会触发。</p>
+<h3 id="getattribute-self-name"><a href="#getattribute-self-name" class="headerlink" title="__getattribute__(self, name)"></a><code>__getattribute__(self, name)</code></h3><p>　　尝试获取指定的属性时总会调用这个方法，不过，寻找的属性是特殊属性或特殊方法时除外。点号与 <code>getattr</code> 和 <code>hasattr</code> 内置函数会触发这个方法。调用 <code>__getattribute__</code> 方法且抛出 <code>AttributeError</code> 异常时，才会调用 <code>__getattr__</code> 方法。为了在获取 <code>obj</code> 实例的属性时不导致无限递归，<code>__getattribute__</code> 方法的实现要使用 <code>super().__getattribute__(obj, name)</code>。</p>
+<h3 id="setattr-self-name-value"><a href="#setattr-self-name-value" class="headerlink" title="__setattr__(self, name, value)"></a><code>__setattr__(self, name, value)</code></h3><p>　　尝试设置指定的属性时总会调用这个方法。点号和 <code>setattr</code> 内置函数会触发这个方法。例如，<code>obj.attr = 42</code> 和 <code>setattr(obj, &#39;attr&#39;, 42)</code> 都会触发 <code>Class.__setattr__(obj, ‘attr’, 42)</code> 方法</p>
+<p><strong><code>__getattribute__</code> 和<code>__setattr__</code> 不管怎样都会调用</strong></p>
+<p>查找属性时，如<code>obj.attr</code>，如果<code>Python</code>发现这个属性<code>attr</code>有个<code>__get__</code>方法，Python会调用<code>attr</code>的<code>__get__</code>方法，返回<code>__get__</code>方法的返回值，而不是返回<code>attr</code>(这一句话并不准确，我只是希望你能对descriptor有个初步的概念)。</p>
+<p>Python中iterator(怎么扯到Iterator了？)是实现了iterator协议的对象，也就是说它实现了下面两个方法<code>__iter__</code>和<code>next()</code>。类似的，descriptor也是实现了某些特定方法的对象。descriptor的特定方法是<code>__get__</code>,<code>__set__</code>和<code>__delete__</code>，其中<code>__set__</code>和<code>__delete__</code>方法是可选的。iterator必须依附某个对象而存在(由对象的<code>__iter__</code>方法返回)，descriptor也必须依附对象，作为对象的一个属性，它而不能单独存在。还有一点，descriptor必须存在于类的<code>__dict__</code>中，这句话的意思是只有在类的<code>__dict__</code>中找到属性，Python才会去看看它有没有<code>__get__</code>等方法，对一个在实例的<code>__dict__</code>中找到的属性，Python根本不理会它有没有<code>__get__</code>等方法，直接返回属性本身。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self._value = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__get__</span><span class="params">(self, instance, instance_type)</span>:</span></span><br><span class="line">        print(<span class="string">"call __get__"</span>)</span><br><span class="line">        <span class="keyword">return</span> self._value.get(instance, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__set__</span><span class="params">(self, instance, value)</span>:</span></span><br><span class="line">        self._value[instance] = value</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Another0</span><span class="params">(object)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.test = Test()</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Another1</span><span class="params">(object)</span>:</span></span><br><span class="line">    test = Test()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    print(Another0().test)</span><br><span class="line">    print(<span class="string">'-'</span>*<span class="number">20</span>)</span><br><span class="line">    print(Another1.test)</span><br><span class="line">    print(<span class="string">'-'</span>*<span class="number">20</span>)</span><br><span class="line">    print(Another1().test)</span><br><span class="line"><span class="comment">###</span></span><br><span class="line">&lt;__main__.Test object at <span class="number">0x107bc8860</span>&gt;</span><br><span class="line">--------------------</span><br><span class="line">call __get__</span><br><span class="line"><span class="number">0</span></span><br><span class="line">--------------------</span><br><span class="line">call __get__</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/14/math-machine_learning-svm/" rel="next" title="math-machine_learning-svm">
+                <i class="fa fa-chevron-left"></i> math-machine_learning-svm
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="SVz">
+            
+              <p class="site-author-name" itemprop="name">SVz</p>
+              <p class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">108</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/Algothrim/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">27</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/SVz777" title="GitHub &rarr; https://github.com/SVz777" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:903943711@qq.com" title="E-Mail &rarr; mailto:903943711@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#property"><span class="nav-number">1.</span> <span class="nav-text">property</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#attr"><span class="nav-number">2.</span> <span class="nav-text">attr</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dict"><span class="nav-number">2.1.</span> <span class="nav-text">__dict__</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#slots"><span class="nav-number">2.2.</span> <span class="nav-text">__slots__</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一些处理属性的内置函数"><span class="nav-number">2.3.</span> <span class="nav-text">一些处理属性的内置函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dir-object"><span class="nav-number">2.3.1.</span> <span class="nav-text">dir([object])</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getattr-object-name-default"><span class="nav-number">2.3.2.</span> <span class="nav-text">getattr(object, name[, default])</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hasattr-object-name"><span class="nav-number">2.3.3.</span> <span class="nav-text">hasattr(object, name)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setattr-object-name-value"><span class="nav-number">2.3.4.</span> <span class="nav-text">setattr(object, name, value)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vars-object"><span class="nav-number">2.3.5.</span> <span class="nav-text">vars([object])</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#处理属性的特殊方法"><span class="nav-number">2.4.</span> <span class="nav-text">处理属性的特殊方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#getattribute-obj-39-attr-39"><span class="nav-number">2.4.1.</span> <span class="nav-text">__getattribute__(obj, &#39;attr&#39;)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#delattr-self-name"><span class="nav-number">2.4.2.</span> <span class="nav-text">__delattr__(self, name)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dir-self"><span class="nav-number">2.4.3.</span> <span class="nav-text">__dir__(self)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getattr-self-name"><span class="nav-number">2.4.4.</span> <span class="nav-text">__getattr__(self, name)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#getattribute-self-name"><span class="nav-number">2.4.5.</span> <span class="nav-text">__getattribute__(self, name)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#setattr-self-name-value"><span class="nav-number">2.4.6.</span> <span class="nav-text">__setattr__(self, name, value)</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.miitbeian.gov.cn" rel="noopener" target="_blank">鄂ICP备17006178号-1 </a>&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">140k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">2:08</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a></div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+  
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=6.7.0"></script>
+
+  <script src="/js/src/motion.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=6.7.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=6.7.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=6.7.0"></script>
+<script src="/js/src/post-details.js?v=6.7.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log(`Failed to save Visitor num, with error message: ${responseJSON.error}`);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log(`LeanCloud Counter Error: ${responseJSON.code} ${responseJSON.error}`);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+                'X-LC-Key': '1Qx8FFm1TFsG2XBlkjybkEUG',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <style>
+    .copy-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 20px;
+      color: #333;
+      white-space: nowrap;
+      vertical-align: middle;
+      cursor: pointer;
+      background-color: #eee;
+      background-image: linear-gradient(#fcfcfc, #eee);
+      border: 1px solid #d5d5d5;
+      border-radius: 3px;
+      user-select: none;
+      outline: 0;
+    }
+
+    .highlight-wrap .copy-btn {
+      transition: opacity .3s ease-in-out;
+      opacity: 0;
+      padding: 2px 6px;
+      position: absolute;
+      right: 4px;
+      top: 8px;
+    }
+
+    .highlight-wrap:hover .copy-btn,
+    .highlight-wrap .copy-btn:focus {
+      opacity: 1
+    }
+
+    .highlight-wrap {
+      position: relative;
+    }
+  </style>
+  <script>
+    $('.highlight').each(function (i, e) {
+      var $wrap = $('<div>').addClass('highlight-wrap');
+      $(e).after($wrap);
+      $wrap.append($('<button>').addClass('copy-btn').append('复制').on('click', function (e) {
+        var code = $(this).parent().find('.code').find('.line').map(function (i, e) {
+          return $(e).text();
+        }).toArray().join('\n');
+        var ta = document.createElement('textarea');
+        var range = document.createRange(); //For Chrome
+        var sel = window.getSelection(); //For Chrome
+        var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+        ta.style.top = yPosition + 'px'; //Prevent page scroll
+        ta.style.position = 'absolute';
+        ta.style.opacity = '0';
+        ta.value = code;
+        ta.textContent = code; //For FireFox
+        ta.contentEditable = true;
+        ta.readOnly = false;
+        document.body.appendChild(ta);
+        range.selectNode(ta);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        ta.setSelectionRange(0, code.length);
+        var result = document.execCommand('copy');
+        
+          if (result) $(this).text('复制成功');
+          else $(this).text('复制失败');
+        
+        ta.blur(); //For iOS
+        $(this).blur();
+      })).on('mouseleave', function (e) {
+        var $b = $(this).find('.copy-btn');
+        setTimeout(function () {
+          $b.text('复制');
+        }, 300);
+      }).append(e);
+    })
+  </script>
+
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=6.7.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.7.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.7.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="支持向量机（SVM）是90年代中期发展起来的基于统计学习理论的一种机器学习方法，通过寻求结构化风险最小来提高学习机泛化能力，实现经验风险和置信范围的最小化，从而达到在统计样本量较少的情况下，亦能获得良好统计规律的目的。 通俗来讲，它是一种二类分类模型，其基本模型定义为特征空间上的间隔最大的线性分类器，即支持向量机的学习策略便是间隔最大化，最终可转化为一个凸二次规划问题的求解。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="math-machine_learning-svm">
+<meta property="og:url" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="支持向量机（SVM）是90年代中期发展起来的基于统计学习理论的一种机器学习方法，通过寻求结构化风险最小来提高学习机泛化能力，实现经验风险和置信范围的最小化，从而达到在统计样本量较少的情况下，亦能获得良好统计规律的目的。 通俗来讲，它是一种二类分类模型，其基本模型定义为特征空间上的间隔最大的线性分类器，即支持向量机的学习策略便是间隔最大化，最终可转化为一个凸二次规划问题的求解。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/hard.png">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/soft.png">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/kernel.png">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/1.png">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/2.png">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/geometric.png">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/noise.png">
+<meta property="og:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/space_map.png">
+<meta property="og:updated_time" content="2019-03-08T13:42:11.555Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="math-machine_learning-svm">
+<meta name="twitter:description" content="支持向量机（SVM）是90年代中期发展起来的基于统计学习理论的一种机器学习方法，通过寻求结构化风险最小来提高学习机泛化能力，实现经验风险和置信范围的最小化，从而达到在统计样本量较少的情况下，亦能获得良好统计规律的目的。 通俗来讲，它是一种二类分类模型，其基本模型定义为特征空间上的间隔最大的线性分类器，即支持向量机的学习策略便是间隔最大化，最终可转化为一个凸二次规划问题的求解。">
+<meta name="twitter:image" content="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/hard.png">
+
+
+
+
+
+
+  <link rel="canonical" href="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>math-machine_learning-svm | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">108</span></a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://www.svz7.cn/2019/02/14/math-machine_learning-svm/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">math-machine_learning-svm
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-02-14 11:48:10" itemprop="dateCreated datePublished" datetime="2019-02-14T11:48:10+08:00">2019-02-14</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-03-08 21:42:11" itemprop="dateModified" datetime="2019-03-08T21:42:11+08:00">2019-03-08</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Math/" itemprop="url" rel="index"><span itemprop="name">Math</span></a></span>
+
+                
+                
+                  ，
+                
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Math/Machine-Learning/" itemprop="url" rel="index"><span itemprop="name">Machine_Learning</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+            <span id="/2019/02/14/math-machine_learning-svm/" class="leancloud_visitors" data-flag-title="math-machine_learning-svm">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读次数：</span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">本文字数：</span>
+                
+                <span title="本文字数">8.2k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">7 分钟</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>支持向量机（SVM）是90年代中期发展起来的基于统计学习理论的一种机器学习方法，通过寻求结构化风险最小来提高学习机泛化能力，实现经验风险和置信范围的最小化，从而达到在统计样本量较少的情况下，亦能获得良好统计规律的目的。</p>
+<p>通俗来讲，它是一种二类分类模型，其基本模型定义为特征空间上的间隔最大的线性分类器，即支持向量机的学习策略便是间隔最大化，最终可转化为一个凸二次规划问题的求解。</p>
+<a id="more"></a>
+<p>由简至繁支持向量机(support vector machine,SVM)可分类为三类：</p>
+<ol>
+<li>线性可分（linear SVM in linearly separable case）的线性SVM<img src="/2019/02/14/math-machine_learning-svm/hard.png" title="hard"></li>
+<li>线性不可分的线性SVM <img src="/2019/02/14/math-machine_learning-svm/soft.png" title="soft"></li>
+<li>非线性（nonlinear）SVM<img src="/2019/02/14/math-machine_learning-svm/kernel.png" title="kernel">
+</li>
+</ol>
+<p>也可以称为：</p>
+<ol>
+<li>hard-margin SVM</li>
+<li>soft-margin SVM</li>
+<li>kernel SVM</li>
+</ol>
+<h1 id="什么是线性可分"><a href="#什么是线性可分" class="headerlink" title="什么是线性可分"></a>什么是线性可分</h1><p>给定一个数据集，如果存在某个超平面$w^T \cdot x + b = 0$能将测试机的正实例和负实例完全正确的划分到超平面两侧，即</p>
+<script type="math/tex; mode=display">
+\left\{ \begin{array} { l l } 
+{ w^T \cdot x_i +b > 0 } & { y_i = +1 } 
+\\ 
+{ w^T \cdot x_i +b < 0 } & { y_i = -1 } \end{array} \right.</script><p>称数据集为线性可分数据集（linearly separable data set） 否则，称为线性不可分数据集</p>
+<p>如何找到这个超平面呢？</p>
+<img src="/2019/02/14/math-machine_learning-svm/1.png" title="多个超平面">
+<p>对于一个数据集，可能有很多的线来分割,直观来看，黄色这条线应该是适应性最好的，离直线两边的数据的间隔最大，对训练集的数据的局限性或噪声有最大的“容忍”能力。</p>
+<h1 id="为什么叫SVM"><a href="#为什么叫SVM" class="headerlink" title="为什么叫SVM"></a>为什么叫SVM</h1><img src="/2019/02/14/math-machine_learning-svm/2.png" title="SVM">
+<p>怎么找到这个平面呢？将距离分离超平面最近的两个不同类别的样本点称为支持向量（Support Vector）的，构成了两条平行于分离超平面的长带，二者之间的距离称之为Margin。显然，Margin更大，则分类正确的确信度更高（与超平面的距离表示分类的确信度，距离越远则分类正确的确信度越高）。</p>
+<p>SVM就是求解支持向量的，所以叫支持向量机。</p>
+<h1 id="间隔"><a href="#间隔" class="headerlink" title="间隔"></a>间隔</h1><p>那么找到这个平面的问题就转换成了，怎么找到这个最大Margin。找到这个Margin就要知道间隔的定义了。<br>间隔分为函数间隔 (functional margin) 和几何间隔 (geometric margin)</p>
+<h2 id="函数间隔"><a href="#函数间隔" class="headerlink" title="函数间隔"></a>函数间隔</h2><p>函数间隔的定义为</p>
+<script type="math/tex; mode=display">
+\hat { \gamma } = y \left( \boldsymbol { w } ^ { \mathrm { T } } \boldsymbol { x } + b \right) = y f ( \boldsymbol { x } )</script><p>函数间隔其实就是类别标签乘上了f(x)的值，可以看到，该值永远是大于等于0的，正好符合了距离的概念，距离总不能是负的吧。</p>
+<p>函数间隔越大, 代表我们对于分类的结果非常确定. 我们希望函数间隔越大越好. 看上去好像没什么毛病, 但这里的确有一个问题, 就是其实我们可以在不改变这个超平面的情况下可以让函数间隔任意大, 为什么?</p>
+<p>由超平面的解析式： </p>
+<script type="math/tex; mode=display">
+w^Tx+ b=0</script><p>方程两边同时乘以常数 C，即</p>
+<script type="math/tex; mode=display">
+C\ w^Tx+ C\ b=0</script><p>显然以上两个方程的解是一致的，超平面没有发生变化。换句话说，参数 w 和 b 同比例缩放对超平面并没有影响。然而参数 w 和 b 放大或缩小 C 倍，函数间隔：</p>
+<script type="math/tex; mode=display">
+\hat\gamma = y(Cw^Tx + Cb) = Cy(w^Tx + b)=C \hat\gamma</script><p>这意味着函数间隔 $\hat \gamma$ 也会放大和缩小相同的倍数。</p>
+<p>而几何间隔：</p>
+<script type="math/tex; mode=display">
+\tilde \gamma = \frac{C\hat\gamma}{C||w||_2} = \tilde \gamma</script><p>这意味着几何间隔不变。</p>
+<p>为了解决这个问题, 我们就需要加上一些限制条件,所以，需要将$w$的大小固定，如$||w||=1$，使得函数间隔固定。这时的间隔也就是几何间隔 .(看完后面几何间隔的定义就明白了)</p>
+<h2 id="几何间隔"><a href="#几何间隔" class="headerlink" title="几何间隔"></a>几何间隔</h2><p>对二维空间来说,点$P(x_0,y_0)$到直线$ax+by+c=0$的公式是</p>
+<script type="math/tex; mode=display">
+\mathrm { d } = \frac { \left| a x _ { 0 } + b y _ { 0 } + c \right| } { \sqrt { a ^ { 2 } + b ^ { 2 } } }</script><p>高维空间呢？</p>
+<script type="math/tex; mode=display">
+\gamma = \frac { y \left( w ^ { T } x + b \right) } { \| w \| _ { 2 } }</script><p>这个式子是怎么推导出来的</p>
+<img src="/2019/02/14/math-machine_learning-svm/geometric.png" title="geometric">
+<p>对于超平面$w^Tx+b$，$x$在超平面上的投影是$x_0$,$w$是超平面的法向量，那么有</p>
+<script type="math/tex; mode=display">
+x = x_0 + \gamma \frac {w}{||w||}</script><p>那么</p>
+<script type="math/tex; mode=display">
+f(x) = f(x_0 + \gamma \frac {w}{||w||})
+\\
+=w^Tx_0+w^T\gamma \frac {w}{||w||}+b
+\\
+=f(x_0)+w^T\gamma \frac {w}{||w||}
+\\
+=0 +\gamma \frac {w^Tw}{||w||}
+\\
+=\gamma \frac {||w||^2}{||w||}
+\\
+=\gamma||w||
+
+\\
+\Downarrow
+\\
+\gamma=\frac{f(x)}{||w||}</script><p>这里的$\gamma$其实是带符号的，我们需要的是绝对值，乘上对应的类别 y 即可，因此实际上我们定义几何间隔为：</p>
+<script type="math/tex; mode=display">
+\tilde { \gamma } = y \gamma = \frac { \hat { \gamma } } { \| \boldsymbol { w } \| }</script><p>也就是上面的</p>
+<script type="math/tex; mode=display">
+\frac { y \left( w ^ { T } x + b \right) } { \| w \| _ { 2 } }</script><p>函数间隔$y(w^Tx+b)=yf(x)$实际上就是<script type="math/tex">|f(x)|</script>，只是人为定义的一个间隔度量；而几何间隔$\frac{|f(x)|}{||w||}$才是直观上的点到超平面距离。</p>
+<hr>
+<p>间隔我们也知道了，所以我们可以求这个Margin了</p>
+<p>上面说过，对于超平面来说函数间隔其实并不固定，所以我们不妨设$\hat y = 1$,那么几何间隔就是$\frac {1}{||w||}$,最大化这个几何间隔就是最小化$||w||$即可.</p>
+<p>另外一种推法：</p>
+<p>设Margin为$2\lambda$对于任意正样本 <script type="math/tex">x_+</script>​，负样本 <script type="math/tex">x_-</script>​ 来说</p>
+<script type="math/tex; mode=display">
+\left\{ \begin{array} { l } 
+{ w^T \cdot x_+ +b \ge \lambda}
+\\ 
+{ w^T \cdot x_- +b \le -\lambda  }
+\end{array} \right.
+\ \ \ \ \ \
+y_i=
+\left\{ \begin{array} { l r } 
+{ +1 } & {x_+}
+\\ 
+{ -1 } & {x_-}
+\end{array} \right.</script><p>结合一下</p>
+<script type="math/tex; mode=display">
+y_i(w^Tx_i+b)-\lambda \ge 0</script><p>距离其实就是 <script type="math/tex">x_+-x_-​</script> 在法向量 $w​$ 上的投影</p>
+<script type="math/tex; mode=display">
+\frac {(x_+-x_-)w^T}{|w|}
+\\
+w \ \  w^T都是表示的法向量，一个是行表示一个是列表示</script><p>把上面式子代进去</p>
+<script type="math/tex; mode=display">
+\frac {(\lambda-b)+(\lambda+b)}{|w|}
+\\ \Downarrow \\
+\frac {2\lambda}{||w||}
+\\ 注: |w| = ||w||_2 = \sqrt{w_1^2 + w_2^2 + \cdots}\\</script><hr>
+<p>所以就是求这个最大的Margin了，也就是</p>
+<script type="math/tex; mode=display">
+max(\frac{1}{||w||})
+\\ \Downarrow \\
+min(||w||)
+\\ \Downarrow \\
+min (\frac{1}{2}||w||_2^2) \qquad s.t \;\; y_i(w^Tx_i + b) \geq 1 (i =1,2,...m) \\</script><p><strong>转化为拉格朗日函数</strong></p>
+<script type="math/tex; mode=display">
+\mathcal { L }(w,b,\alpha) = \frac{1}{2}||w||_2^2 - \sum\limits_{i=1}^{m}\alpha_i[y_i(w^Tx_i + b) - 1] \qquad s.t \ \alpha_i \geq 0 \\</script><p>也就是求这个函数的极值</p>
+<script type="math/tex; mode=display">
+L' = (\frac{\partial{L}}{\partial{w}},\frac{\partial{L}}{\partial{b}})
+\\
+\frac{\partial{L}}{\partial{w}}=0 \Rightarrow w^T-\sum_i\alpha_iy_ix_i=0
+\\
+\frac{\partial{L}}{\partial{b}}=0 \Rightarrow \sum_i\alpha_iy_i=0</script><p>代回去</p>
+<script type="math/tex; mode=display">
+\begin{align} \min _ { w , b } \max _ { \alpha _ { i } \geq 0 } \mathcal { L } ( w , b , \alpha ) & = \frac{1}{2}||w||_2^2 - \sum\limits_{i=1}^{m}\alpha_i[y_i(w^Tx_i + b) - 1] \\ & = \frac{1}{2}w^Tw-\sum\limits_{i=1}^{m}\alpha_iy_iw^Tx_i - \sum\limits_{i=1}^{m}\alpha_iy_ib + \sum\limits_{i=1}^{m}\alpha_i \\ & = \frac{1}{2}w^T\sum\limits_{i=1}^{m}\alpha_iy_ix_i -\sum\limits_{i=1}^{m}\alpha_iy_iw^Tx_i - \sum\limits_{i=1}^{m}\alpha_iy_ib + \sum\limits_{i=1}^{m}\alpha_i \\ & = \frac{1}{2}w^T\sum\limits_{i=1}^{m}\alpha_iy_ix_i - w^T\sum\limits_{i=1}^{m}\alpha_iy_ix_i - b\sum\limits_{i=1}^{m}\alpha_iy_i + \sum\limits_{i=1}^{m}\alpha_i \\ & = - \frac{1}{2}w^T\sum\limits_{i=1}^{m}\alpha_iy_ix_i + \sum\limits_{i=1}^{m}\alpha_i \\ & = -\frac{1}{2}(\sum\limits_{i=1}^{m}\alpha_iy_ix_i)^T(\sum\limits_{i=1}^{m}\alpha_iy_ix_i) + \sum\limits_{i=1}^{m}\alpha_i \\ & = -\frac{1}{2}\sum\limits_{i=1}^{m}\alpha_iy_ix_i^T\sum\limits_{i=1}^{m}\alpha_iy_ix_i + \sum\limits_{i=1}^{m}\alpha_i \\ & = -\frac{1}{2}\sum\limits_{i=1,j=1}^{m}\alpha_iy_ix_i^T\alpha_jy_jx_j + \sum\limits_{i=1}^{m}\alpha_i \end{align} \\</script><p>调一下顺序</p>
+<script type="math/tex; mode=display">
+\min _ { w , b } \max _ { \alpha _ { i } \geq 0 } \mathcal { L } ( w , b , \alpha )= - \frac { 1 } { 2 } \sum _ { i = 1 , j = 1 } ^ { m } \alpha _ { i }\alpha _ { j }  y _ { i }y _ { j } x _ { i } ^ { T }  x _ { j } + \sum _ { i = 1 } ^ { m } \alpha _ { i }
+\\
+\begin{array} { c } { \text {s.t.} , \alpha _ { i } \geq 0 , i = 1 , \ldots , n } \\ { \sum _ { i = 1 } ^ { n } \alpha _ { i } y = 0 } \end{array}</script><p>这个$\alpha$是什么东西呢，其实就是如果$(x_i,y_i)$不是支持向量，那么它就是0，如果是就是一个非0的值。</p>
+<script type="math/tex; mode=display">
+\max _ { \alpha _ { i } \geq 0 } \mathcal { L } ( w , b , \alpha ) = \max _ { \alpha _ { i } \geq 0 } \frac { 1 } { 2 } \| w \| ^ { 2 } - \sum _ { i = 1 } ^ { n } \alpha _ { i } \color{red}{ \left( y _ { i } \left( w ^ { T } x _ { i } + b \right) - 1 \right)}</script><p>注意到如果 $x_i$ 是支持向量的话，上式中红颜色的部分是等于 0 的（因为支持向量的 functional margin 等于 1 ），而对于非支持向量来说，functional margin 会大于 1 ，因此红颜色部分是大于零的，而又是非负的，为了满足最大化，必须等于 0 。这也就是这些非Supporting Vector 的点的局限性。 </p>
+<p>求$\alpha$可以用SMO,KKT等方式，这就不说了太高深，这也不重要。</p>
+<h1 id="松弛变量"><a href="#松弛变量" class="headerlink" title="松弛变量"></a>松弛变量</h1><p>数据有的时候是线性可分，但是因为数据中总会有一些噪音的影响而导致线性不可分</p>
+<img src="/2019/02/14/math-machine_learning-svm/noise.png" title="noise">
+<p>为了处理这种情况，SVM 允许数据点在一定程度上偏离一下超平面。</p>
+<p>我们原来的约束条件是</p>
+<script type="math/tex; mode=display">
+y _ { i } \left( w ^ { T } x _ { i } + b \right) \geq 1 , \quad i = 1 , \ldots , n</script><p>考虑到噪音</p>
+<script type="math/tex; mode=display">
+y _ { i } \left( w ^ { T } x _ { i } + b \right) \geq 1 - \xi _ { i } , \quad i = 1 , \ldots , n</script><p>其中$\xi _ { i } \ge 0$称为松弛变量 (slack variable) ,对应数据点$x_i$允许偏离的 functional margin 的量,那么</p>
+<script type="math/tex; mode=display">
+\min \frac { 1 } { 2 } \| w \| ^ { 2 } + \color{red}{C \sum _ { i = 1 } ^ { n } \xi _ { i }}
+\\
+\text {s.t.} \begin{array} { l } {  y _ { i } \left( w ^ { T } x _ { i } + b \right) \geq 1 - \xi _ { i } , i = 1 , \ldots , n } \\ { \xi _ { i } \geq 0 , i = 1 , \ldots , n } \end{array}</script><p>引入拉格朗日，最后结果为</p>
+<script type="math/tex; mode=display">
+\max _ { \alpha } \sum _ { i = 1 } ^ { n } \alpha _ { i } - \frac { 1 } { 2 } \sum _ { i , j = 1 } ^ { n } \alpha _ { i } \alpha _ { j } y _ { i } y _ { j } \left\langle x _ { i } , x _ { j } \right\rangle
+\\
+\begin{array} { c } { \text { s.t., } 0 \leq \alpha _ { i } \leq C , i = 1 , \ldots , n } \\ { \sum _ { i = 1 } ^ { n } \alpha _ { i } y _ { i } = 0 } \end{array}</script><p>区别就在于多了一个上限$C$</p>
+<h1 id="kernel"><a href="#kernel" class="headerlink" title="kernel"></a>kernel</h1><p>kernel又是干嘛的呢？</p>
+<p>事实上，大部分时候数据并不是线性可分的，这个时候满足这样条件的超平面就根本不存在。在上文中，我们已经了解到了SVM处理线性可分的情况，那对于非线性的数据SVM咋处理呢？对于非线性的情况，SVM 的处理方法是选择一个核函数 $k(⋅,⋅)$ 通过将数据映射到高维空间，来解决在原始空间中线性不可分的问题。</p>
+<img src="/2019/02/14/math-machine_learning-svm/space_map.png" title="space_map">
+<p>这里有个很简单的思想</p>
+<ol>
+<li>首先使用一个非线性映射将数据变换到一个特征空间F，使其线性可分，</li>
+<li>然后在特征空间使用线性学习器分类。</li>
+</ol>
+<p>也就是非线性数据，就找一个映射$k(·，·)$，然后一股脑把原来的数据映射到新空间中，再做线性 SVM 即可。不过事实上好像并没有这么简单。</p>
+<p>如果原始空间是三维（一阶、二阶和三阶的组合），那么我们会得到：3(一次)+3(二次交叉)+3(平方)+3(立方)+1(x1<em>x2</em>x3)+2<em>3(交叉，一个一次一个二次，类似x1</em>x2^2) = 19维的新空间，这个数目是呈指数级爆炸性增长的，从而势必这给的计算带来非常大的困难，而且如果遇到无穷维的情况，就根本无从计算了。</p>
+<p>kernel则是<strong>直接在原来的低维空间中进行计算，而不需要显式地写出映射后的结果</strong>，也就是直接将$k(x_i,x_j)$视为新空间中的$x_ix_j$</p>
+<p>那么</p>
+<script type="math/tex; mode=display">
+min(L)= - \frac { 1 } { 2 } \sum _ { i = 1 , j = 1 } ^ { m } \alpha _ { i }\alpha _ { j }  y _ { i }y _ { j } x _ { i } ^ { T }  x _ { j } + \sum _ { i = 1 } ^ { m } \alpha _ { i }
+\\ \Downarrow \\
+min(L)= - \frac { 1 } { 2 } \sum _ { i = 1 , j = 1 } ^ { m } \alpha _ { i }\alpha _ { j }  y _ { i }y _ { j } k(x_i,x_j)+ \sum _ { i = 1 } ^ { m } \alpha _ { i }</script><p>这样一来计算的问题就算解决了，避开了直接在高维空间中进行计算，而结果却是等价的！</p>
+<p>但是kernel的选择确实很困难的，一般会采用以下几种</p>
+<p>多项式核 </p>
+<script type="math/tex; mode=display">
+\kappa ( x , y ) = \left( a x ^ { T } y + c \right) ^ { d }</script><p>高斯核 </p>
+<script type="math/tex; mode=display">
+\kappa \left( x _ { 1 } , x _ { 2 } \right) = \exp \left( - \frac { \left\| x _ { 1 } - x _ { 2 } \right\| ^ { 2 } } { 2 \sigma ^ { 2 } } \right)</script><p>线性核</p>
+<script type="math/tex; mode=display">
+\kappa \left( x _ { 1 } , x _ { 2 } \right) = \left\langle x _ { 1 } , x _ { 2 } \right\rangle</script>
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/13/python-lib-asyncio/" rel="next" title="python-lib-asyncio">
+                <i class="fa fa-chevron-left"></i> python-lib-asyncio
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/27/python-base-attr/" rel="prev" title="python-base-attr">
+                python-base-attr <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="SVz">
+            
+              <p class="site-author-name" itemprop="name">SVz</p>
+              <p class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">108</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/Algothrim/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">27</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/SVz777" title="GitHub &rarr; https://github.com/SVz777" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:903943711@qq.com" title="E-Mail &rarr; mailto:903943711@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#什么是线性可分"><span class="nav-number">1.</span> <span class="nav-text">什么是线性可分</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#为什么叫SVM"><span class="nav-number">2.</span> <span class="nav-text">为什么叫SVM</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#间隔"><span class="nav-number">3.</span> <span class="nav-text">间隔</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#函数间隔"><span class="nav-number">3.1.</span> <span class="nav-text">函数间隔</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#几何间隔"><span class="nav-number">3.2.</span> <span class="nav-text">几何间隔</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#松弛变量"><span class="nav-number">4.</span> <span class="nav-text">松弛变量</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#kernel"><span class="nav-number">5.</span> <span class="nav-text">kernel</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.miitbeian.gov.cn" rel="noopener" target="_blank">鄂ICP备17006178号-1 </a>&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">140k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">2:08</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a></div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+  
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=6.7.0"></script>
+
+  <script src="/js/src/motion.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=6.7.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=6.7.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=6.7.0"></script>
+<script src="/js/src/post-details.js?v=6.7.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log(`Failed to save Visitor num, with error message: ${responseJSON.error}`);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log(`LeanCloud Counter Error: ${responseJSON.code} ${responseJSON.error}`);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+                'X-LC-Key': '1Qx8FFm1TFsG2XBlkjybkEUG',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+    
+      <script type="text/x-mathjax-config">
+  
+
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+      
+      equationNumbers: {
+        autoNumber: "AMS"
+      }
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+      for (i = 0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+  });
+</script>
+<script src="//cdn.jsdelivr.net/npm/mathjax@2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+<style>
+.MathJax_Display {
+  overflow: auto hidden;
+}
+</style>
+
+    
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <style>
+    .copy-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 20px;
+      color: #333;
+      white-space: nowrap;
+      vertical-align: middle;
+      cursor: pointer;
+      background-color: #eee;
+      background-image: linear-gradient(#fcfcfc, #eee);
+      border: 1px solid #d5d5d5;
+      border-radius: 3px;
+      user-select: none;
+      outline: 0;
+    }
+
+    .highlight-wrap .copy-btn {
+      transition: opacity .3s ease-in-out;
+      opacity: 0;
+      padding: 2px 6px;
+      position: absolute;
+      right: 4px;
+      top: 8px;
+    }
+
+    .highlight-wrap:hover .copy-btn,
+    .highlight-wrap .copy-btn:focus {
+      opacity: 1
+    }
+
+    .highlight-wrap {
+      position: relative;
+    }
+  </style>
+  <script>
+    $('.highlight').each(function (i, e) {
+      var $wrap = $('<div>').addClass('highlight-wrap');
+      $(e).after($wrap);
+      $wrap.append($('<button>').addClass('copy-btn').append('复制').on('click', function (e) {
+        var code = $(this).parent().find('.code').find('.line').map(function (i, e) {
+          return $(e).text();
+        }).toArray().join('\n');
+        var ta = document.createElement('textarea');
+        var range = document.createRange(); //For Chrome
+        var sel = window.getSelection(); //For Chrome
+        var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+        ta.style.top = yPosition + 'px'; //Prevent page scroll
+        ta.style.position = 'absolute';
+        ta.style.opacity = '0';
+        ta.value = code;
+        ta.textContent = code; //For FireFox
+        ta.contentEditable = true;
+        ta.readOnly = false;
+        document.body.appendChild(ta);
+        range.selectNode(ta);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        ta.setSelectionRange(0, code.length);
+        var result = document.execCommand('copy');
+        
+          if (result) $(this).text('复制成功');
+          else $(this).text('复制失败');
+        
+        ta.blur(); //For iOS
+        $(this).blur();
+      })).on('mouseleave', function (e) {
+        var $b = $(this).find('.copy-btn');
+        setTimeout(function () {
+          $b.text('复制');
+        }, 300);
+      }).append(e);
+    })
+  </script>
+
+
+  
+
+</body>
+</html>

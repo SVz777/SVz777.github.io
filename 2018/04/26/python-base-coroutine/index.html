@@ -96,17 +96,17 @@
 
 
 
-  <meta name="description" content="asyncio.coroutine /yield from 3.5 之后 新增关键字 async / await coroutine中可以使用yield ,但是不能yield 回值,不然会RuntimeError">
+  <meta name="description" content="协程的语法和生成器类似，都是定义体中包含yield关键字的函数。在协程中，yield通常出现在表达式右边。可以产出值，也可以不产出——如果 yield 关键字后面没有表达式，那么生成器产出 None。协程可能会从调用方接收数据，不过调用方把数据提供给协程使用的是 .send(value) 方法，而不是next(...) 函数。通常，调用方会把值推送给协程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="coroutine">
 <meta property="og:url" content="https://www.svz7.cn/2018/04/26/python-base-coroutine/index.html">
 <meta property="og:site_name" content="SHIELD">
-<meta property="og:description" content="asyncio.coroutine /yield from 3.5 之后 新增关键字 async / await coroutine中可以使用yield ,但是不能yield 回值,不然会RuntimeError">
+<meta property="og:description" content="协程的语法和生成器类似，都是定义体中包含yield关键字的函数。在协程中，yield通常出现在表达式右边。可以产出值，也可以不产出——如果 yield 关键字后面没有表达式，那么生成器产出 None。协程可能会从调用方接收数据，不过调用方把数据提供给协程使用的是 .send(value) 方法，而不是next(...) 函数。通常，调用方会把值推送给协程。">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-01-19T09:12:11.653Z">
+<meta property="og:updated_time" content="2019-03-14T15:05:47.298Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="coroutine">
-<meta name="twitter:description" content="asyncio.coroutine /yield from 3.5 之后 新增关键字 async / await coroutine中可以使用yield ,但是不能yield 回值,不然会RuntimeError">
+<meta name="twitter:description" content="协程的语法和生成器类似，都是定义体中包含yield关键字的函数。在协程中，yield通常出现在表达式右边。可以产出值，也可以不产出——如果 yield 关键字后面没有表达式，那么生成器产出 None。协程可能会从调用方接收数据，不过调用方把数据提供给协程使用的是 .send(value) 方法，而不是next(...) 函数。通常，调用方会把值推送给协程。">
 
 
 
@@ -240,7 +240,7 @@
       
     
 
-    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">101</span></a>
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">108</span></a>
 
   </li>
 
@@ -352,7 +352,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2019-01-19 17:12:11" itemprop="dateModified" datetime="2019-01-19T17:12:11+08:00">2019-01-19</time>
+                <time title="修改时间：2019-03-14 23:05:47" itemprop="dateModified" datetime="2019-03-14T23:05:47+08:00">2019-03-14</time>
               
             
           </span>
@@ -390,6 +390,17 @@
 
           
           
+            <span id="/2018/04/26/python-base-coroutine/" class="leancloud_visitors" data-flag-title="coroutine">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读次数：</span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
 
           
 
@@ -404,7 +415,7 @@
                 
                   <span class="post-meta-item-text">本文字数：</span>
                 
-                <span title="本文字数">365</span>
+                <span title="本文字数">2.9k</span>
               
 
               
@@ -418,7 +429,7 @@
                 
                   <span class="post-meta-item-text">阅读时长 &asymp;</span>
                 
-                <span title="阅读时长">1 分钟</span>
+                <span title="阅读时长">3 分钟</span>
               
             </div>
           
@@ -438,10 +449,20 @@
       
 
       
-        <p>asyncio.coroutine /yield from</p>
-<p>3.5 之后 新增关键字 async / await</p>
-<p>coroutine中可以使用yield ,但是不能yield 回值,不然会RuntimeError<br><a id="more"></a></p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@asyncio.coroutine</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">ttt</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>):</span><br><span class="line">        <span class="keyword">yield</span> <span class="comment">#i 这里如果加上值 会产生RuntimeError: Task got bad yield: 0</span></span><br><span class="line">    print(<span class="number">1</span>)</span><br><span class="line">    t = <span class="keyword">yield</span> <span class="keyword">from</span> yyy()</span><br><span class="line">    print(t)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">8</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@asyncio.coroutine</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">ggg</span><span class="params">()</span>:</span></span><br><span class="line">    t = <span class="keyword">yield</span> <span class="keyword">from</span> ttt()</span><br><span class="line">    print(t)</span><br></pre></td></tr></table></figure>
+        <p>协程的语法和生成器类似，都是定义体中包含<code>yield</code>关键字的函数。在协程中，<code>yield</code>通常出现在表达式右边。可以产出值，也可以不产出——如果 yield 关键字后面没有表达式，那么生成器产出 None。协程可能会从调用方接收数据，不过调用方把数据提供给协程使用的是 <code>.send(value)</code> 方法，而不是<code>next(...)</code> 函数。通常，调用方会把值推送给协程。</p>
+<a id="more"></a>
+<p>生成器的调用方可以使用 .send(…) 方法发送数据，发送的数据会成为生成器函数中 yield 表达式的值。因此，生成器可以作为协程使用。协程是指一个过程，这个过程与调用方协作，产出由调用方提供的值。生成器可以返回一个值 </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">simple_coro</span><span class="params">()</span>:</span></span><br><span class="line">    print(<span class="string">'coro begin'</span>)</span><br><span class="line">    x = <span class="keyword">yield</span> <span class="number">1</span></span><br><span class="line">    print(<span class="string">'x:'</span>,x)</span><br><span class="line">    print(<span class="string">'coro end'</span>)</span><br><span class="line"></span><br><span class="line">print(<span class="string">'begin'</span>)</span><br><span class="line">a = simple_coro()</span><br><span class="line">print(<span class="string">'init coro'</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    print(next(a))</span><br><span class="line">    print(a.send(<span class="string">'a'</span>))</span><br><span class="line"><span class="keyword">except</span> StopIteration:</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line">print(<span class="string">'end'</span>)</span><br><span class="line"><span class="comment">###</span></span><br><span class="line">begin</span><br><span class="line">init coro</span><br><span class="line">coro begin</span><br><span class="line"><span class="number">1</span></span><br><span class="line">x: a</span><br><span class="line">coro end</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<p>协程可以身处四个状态中的一个。当前状态可以使用 <code>inspect.getgeneratorstate(...)</code> 函数确定，该函数会返回下述字符串中的一个。<br><code>GEN_CREATED</code> 等待开始执行。<br><code>GEN_RUNNING</code> 解释器正在执行。<br><code>GEN_SUSPENDED</code> 在 yield 表达式处暂停。<br><code>GEN_CLOSED</code> 执行结束。</p>
+<p>因为 <code>send</code> 方法的参数会成为暂停的 <code>yield</code> 表达式的值，所以，仅当协程处于暂停状态时才能调用 <code>send</code> 方法，例如 <code>my_coro.send(42)</code>。不过，如果协程还没激活（即，状态是 <code>GEN_CREATED</code>），情况就不同了。因此，始终要调用 <code>next(my_coro)</code> 激活协程——也可以调用 <code>my_coro.send(None)</code>,如果创建协程对象后立即把 None 之外的值发给它,会抛出<code>TypeError: can&#39;t send non-None value to a just-started generator</code></p>
+<p>最先调用 next(my_coro) 函数这一步通常称为“预激”（prime）协程（即，让协程向前执行到第一个 yield 表达式，准备好作为活跃的协程使用）。</p>
+<p>协程中未处理的异常会向上冒泡，传给 next 函数或 send 方法的调用方（即触发协程的对象）</p>
+<p><code>coro.throw(exc_type[, exc_value[, traceback]])</code><br>致使生成器在暂停的 yield 表达式处抛出指定的异常。如果生成器处理了抛出的异常，代码会向前执行到下一个 yield 表达式，而产出的值会成为调用 generator.throw 方法得到的返回值。如果生成器没有处理抛出的异常，异常会向上冒泡，传到调用方的上下文中。<br><code>coro.close()</code><br>致使生成器在暂停的 yield 表达式处抛出 GeneratorExit 异常。如果生成器没有处理这个异常，或者抛出了 StopIteration 异常（通常是指运行到结尾），调用方不会报错。如果收到 GeneratorExit 异常，生成器一定不能产出值，否则解释器会抛出 RuntimeError 异常。生成器抛出的其他异常会向上冒泡，传给调用方。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestExcept</span><span class="params">(Exception)</span>:</span></span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">simple_coro</span><span class="params">()</span>:</span></span><br><span class="line">    print(<span class="string">'coro begin'</span>)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        x = <span class="keyword">yield</span> <span class="number">1</span></span><br><span class="line">    <span class="keyword">except</span> TestExcept:</span><br><span class="line">        print(<span class="string">'deal'</span>)</span><br><span class="line">    <span class="keyword">yield</span> <span class="number">2</span></span><br><span class="line">    print(<span class="string">'coro end'</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">10</span></span><br><span class="line"></span><br><span class="line">print(<span class="string">'begin'</span>)</span><br><span class="line">a = simple_coro()</span><br><span class="line">print(<span class="string">'init coro'</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    print(<span class="string">'1'</span>,next(a))</span><br><span class="line">    print(<span class="string">'2'</span>,a.throw(TestExcept))</span><br><span class="line">    print(<span class="string">'3'</span>,next(a))</span><br><span class="line"><span class="keyword">except</span> StopIteration <span class="keyword">as</span> e:</span><br><span class="line">    print(<span class="string">'except e:'</span>,e.value)</span><br><span class="line">print(<span class="string">'end'</span>)</span><br><span class="line"><span class="comment">###</span></span><br><span class="line">begin</span><br><span class="line">init coro</span><br><span class="line">coro begin</span><br><span class="line"><span class="number">1</span> <span class="number">1</span></span><br><span class="line">deal</span><br><span class="line"><span class="number">2</span> <span class="number">2</span></span><br><span class="line">coro end</span><br><span class="line"><span class="keyword">except</span> e: <span class="number">10</span></span><br><span class="line">end</span><br></pre></td></tr></table></figure></p>
+<p>把 <code>TestExcept</code> 异常传入 <code>simple_coro</code> 不会导致协程中止,但是，如果传入协程的异常没有处理，协程会停止，即状态变成 <code>GEN_CLOSED</code>。异常对象的 <code>value</code> 属性保存着返回的值。注意，<code>return</code> 表达式的值会偷偷传给调用方，赋值给 <code>StopIteration</code> 异常的一个属性。这样做有点不合常理，但是能保留生成器对象的常规行为——耗尽时抛出 <code>StopIteration</code> 异常。</p>
+<p>对 <code>yield from</code> 结构来说，解释器不仅会捕获 <code>StopIteration</code> 异常，还会把 <code>value</code> 属性的值变成 <code>yield from</code> 表达式的值</p>
+<p>在生成器 <code>gen</code> 中使用 <code>yield from subgen()</code> 时<code>`subgen</code> 会获得控制权，把产出的值传给 <code>gen</code> 的调用方，即调用方可以直接控制 <code>subgen</code>。与此同时，<code>gen</code> 会阻塞，等待 <code>subgen</code> 终止。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">yf_coro</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">yield</span> <span class="number">1</span></span><br><span class="line">    <span class="keyword">yield</span> <span class="number">2</span></span><br><span class="line">    <span class="keyword">yield</span> <span class="number">3</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">'end'</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">simple_coro</span><span class="params">()</span>:</span></span><br><span class="line">    print(<span class="string">'coro begin'</span>)</span><br><span class="line">    gg = <span class="keyword">yield</span> <span class="keyword">from</span> yf_coro()</span><br><span class="line">    print(<span class="string">'gg'</span>,gg)</span><br><span class="line">    print(<span class="string">'coro end'</span>)</span><br><span class="line"></span><br><span class="line">a = simple_coro()</span><br><span class="line"><span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        print(next(a))</span><br><span class="line">    <span class="keyword">except</span> StopIteration:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line"><span class="comment">###</span></span><br><span class="line">coro begin</span><br><span class="line"><span class="number">1</span></span><br><span class="line"><span class="number">2</span></span><br><span class="line"><span class="number">3</span></span><br><span class="line">gg end</span><br><span class="line">coro end</span><br></pre></td></tr></table></figure>
+<p>子生成器可能是简单的迭代器，只实现了 <code>__next__</code> 方法；但是，<code>yield from</code> 也能处理这种子生成器。不过，引入 <code>yield from</code> 结构的目的是为了支持实现了 <code>__next__</code>、<code>send</code>、<code>close</code> 和 <code>throw</code> 方法的生成器。</p>
 
       
     </div>
@@ -547,7 +568,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">101</span>
+                    <span class="site-state-item-count">108</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -557,7 +578,7 @@
                 
                 
                 <div class="site-state-item site-state-categories">
-                  <a href="/Database/index.html">
+                  <a href="/Algothrim/index.html">
                     
                     
                       
@@ -612,7 +633,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">26</span>
+                      
+                    
+                    <span class="site-state-item-count">27</span>
                     <span class="site-state-item-name">分类</span>
                   </a>
                 </div>
@@ -691,7 +714,7 @@
       <i class="fa fa-area-chart"></i>
     </span>
     
-    <span title="站点总字数">107k</span>
+    <span title="站点总字数">140k</span>
   
 
   
@@ -700,7 +723,7 @@
       <i class="fa fa-coffee"></i>
     </span>
     
-    <span title="站点阅读时长">1:37</span>
+    <span title="站点阅读时长">2:08</span>
   
 </div>
 
@@ -719,6 +742,32 @@
 
 
         
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+  
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
 
 
 
@@ -836,6 +885,71 @@
 
 
   
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log(`Failed to save Visitor num, with error message: ${responseJSON.error}`);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log(`LeanCloud Counter Error: ${responseJSON.code} ${responseJSON.error}`);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+                'X-LC-Key': '1Qx8FFm1TFsG2XBlkjybkEUG',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
 
   
 
