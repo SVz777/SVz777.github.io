@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+    
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext">
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=6.7.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.7.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.7.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="基础的set相关的命令,t_set.c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis-源码学习-set">
+<meta property="og:url" content="https://www.svz7.cn/2019/07/17/redis-源码学习-set/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="基础的set相关的命令,t_set.c">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-07-17T16:25:25.251Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="redis-源码学习-set">
+<meta name="twitter:description" content="基础的set相关的命令,t_set.c">
+
+
+
+
+
+
+  <link rel="canonical" href="https://www.svz7.cn/2019/07/17/redis-源码学习-set/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>redis-源码学习-set | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">116</span></a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://www.svz7.cn/2019/07/17/redis-源码学习-set/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">redis-源码学习-set
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-07-17 16:47:44" itemprop="dateCreated datePublished" datetime="2019-07-17T16:47:44+08:00">2019-07-17</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-07-18 00:25:25" itemprop="dateModified" datetime="2019-07-18T00:25:25+08:00">2019-07-18</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+            <span id="/2019/07/17/redis-源码学习-set/" class="leancloud_visitors" data-flag-title="redis-源码学习-set">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读次数：</span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">本文字数：</span>
+                
+                <span title="本文字数">36k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">33 分钟</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>基础的set相关的命令,<code>t_set.c</code></p>
+<a id="more"></a>
+<h2 id="sadd——saddCommand"><a href="#sadd——saddCommand" class="headerlink" title="sadd——saddCommand"></a>sadd——saddCommand</h2><p>示例：SADD KEY_NAME VALUE1..VALUEN</p>
+<ul>
+<li>被添加到集合中的新元素的数量，不包括被忽略的元素。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">saddCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *<span class="built_in">set</span>;</span><br><span class="line">    <span class="keyword">int</span> j, added = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 取出集合对象</span></span><br><span class="line">    <span class="built_in">set</span> = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 对象不存在，创建一个新的，并将它关联到数据库</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">set</span> == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="built_in">set</span> = setTypeCreate(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">        dbAdd(c-&gt;db,c-&gt;argv[<span class="number">1</span>],<span class="built_in">set</span>);</span><br><span class="line">    <span class="comment">// 对象存在，检查类型</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">set</span>-&gt;type != REDIS_SET) &#123;</span><br><span class="line">            addReply(c,shared.wrongtypeerr);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 将所有输入元素添加到集合中</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">2</span>; j &lt; c-&gt;argc; j++) &#123;</span><br><span class="line">        c-&gt;argv[j] = tryObjectEncoding(c-&gt;argv[j]);</span><br><span class="line">        <span class="comment">// 只有元素未存在于集合时，才算一次成功添加</span></span><br><span class="line">        <span class="keyword">if</span> (setTypeAdd(<span class="built_in">set</span>,c-&gt;argv[j])) added++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 如果有至少一个元素被成功添加，那么执行以下程序</span></span><br><span class="line">    <span class="keyword">if</span> (added) &#123;</span><br><span class="line">        <span class="comment">// 发送键修改信号</span></span><br><span class="line">        signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_SET,<span class="string">"sadd"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 将数据库设为脏</span></span><br><span class="line">    server.dirty += added;</span><br><span class="line">    <span class="comment">// 返回添加元素的数量</span></span><br><span class="line">    addReplyLongLong(c,added);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 多态 add 操作</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 添加成功返回 1 ，如果元素已经存在，返回 0 。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">setTypeAdd</span><span class="params">(robj *subject, robj *value)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> llval;</span><br><span class="line">    <span class="comment">// 字典</span></span><br><span class="line">    <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">        <span class="comment">// 将 value 作为键， NULL 作为值，将元素添加到字典中</span></span><br><span class="line">        <span class="keyword">if</span> (dictAdd(subject-&gt;ptr,value,<span class="literal">NULL</span>) == DICT_OK) &#123;</span><br><span class="line">            incrRefCount(value);</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// intset</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">         </span><br><span class="line">        <span class="comment">// 如果对象的值可以编码为整数的话，那么将对象的值添加到 intset 中</span></span><br><span class="line">        <span class="keyword">if</span> (isObjectRepresentableAsLongLong(value,&amp;llval) == REDIS_OK) &#123;</span><br><span class="line">            <span class="keyword">uint8_t</span> success = <span class="number">0</span>;</span><br><span class="line">            subject-&gt;ptr = intsetAdd(subject-&gt;ptr,llval,&amp;success);</span><br><span class="line">            <span class="keyword">if</span> (success) &#123;</span><br><span class="line">                <span class="comment">/* Convert to regular set when the intset contains</span></span><br><span class="line"><span class="comment">                 * too many entries. */</span></span><br><span class="line">                <span class="comment">// 添加成功</span></span><br><span class="line">                <span class="comment">// 检查集合在添加新元素之后是否需要转换为字典</span></span><br><span class="line">                <span class="keyword">if</span> (intsetLen(subject-&gt;ptr) &gt; server.set_max_intset_entries)</span><br><span class="line">                    setTypeConvert(subject,REDIS_ENCODING_HT);</span><br><span class="line">                <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        <span class="comment">// 如果对象的值不能编码为整数，那么将集合从 intset 编码转换为 HT 编码</span></span><br><span class="line">        <span class="comment">// 然后再执行添加操作</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* Failed to get integer from object, convert to regular set. */</span></span><br><span class="line">            setTypeConvert(subject,REDIS_ENCODING_HT);</span><br><span class="line">            <span class="comment">/* The set *was* an intset and this value is not integer</span></span><br><span class="line"><span class="comment">             * encodable, so dictAdd should always work. */</span></span><br><span class="line">            redisAssertWithInfo(<span class="literal">NULL</span>,value,dictAdd(subject-&gt;ptr,value,<span class="literal">NULL</span>) == DICT_OK);</span><br><span class="line">            incrRefCount(value);</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// 未知编码</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown set encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 添加失败，元素已经存在</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="srem——sremCommand"><a href="#srem——sremCommand" class="headerlink" title="srem——sremCommand"></a>srem——sremCommand</h2><p>示例：SREM KEY MEMBER1..MEMBERN</p>
+<ul>
+<li>被成功移除的元素的数量，不包括被忽略的元素。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sremCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *<span class="built_in">set</span>;</span><br><span class="line">    <span class="keyword">int</span> j, deleted = <span class="number">0</span>, keyremoved = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 取出集合对象</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="built_in">set</span> = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,<span class="built_in">set</span>,REDIS_SET)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 删除输入的所有元素</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">2</span>; j &lt; c-&gt;argc; j++) &#123;</span><br><span class="line">         </span><br><span class="line">        <span class="comment">// 只有元素在集合中时，才算一次成功删除</span></span><br><span class="line">        <span class="keyword">if</span> (setTypeRemove(<span class="built_in">set</span>,c-&gt;argv[j])) &#123;</span><br><span class="line">            deleted++;</span><br><span class="line">            <span class="comment">// 如果集合已经为空，那么删除集合对象</span></span><br><span class="line">            <span class="keyword">if</span> (setTypeSize(<span class="built_in">set</span>) == <span class="number">0</span>) &#123;</span><br><span class="line">                dbDelete(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">                keyremoved = <span class="number">1</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 如果有至少一个元素被成功删除，那么执行以下程序</span></span><br><span class="line">    <span class="keyword">if</span> (deleted) &#123;</span><br><span class="line">        <span class="comment">// 发送键修改信号</span></span><br><span class="line">        signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_SET,<span class="string">"srem"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        <span class="keyword">if</span> (keyremoved)</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,c-&gt;argv[<span class="number">1</span>],</span><br><span class="line">                                c-&gt;db-&gt;id);</span><br><span class="line">        <span class="comment">// 将数据库设为脏</span></span><br><span class="line">        server.dirty += deleted;</span><br><span class="line">    &#125;</span><br><span class="line">     </span><br><span class="line">    <span class="comment">// 将被成功删除元素的数量作为回复</span></span><br><span class="line">    addReplyLongLong(c,deleted);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="smove——smoveCommand"><a href="#smove——smoveCommand" class="headerlink" title="smove——smoveCommand"></a>smove——smoveCommand</h2><p>示例：SMOVE SOURCE DESTINATION MEMBER </p>
+<ul>
+<li>如果成员元素被成功移除，返回 1 。 如果成员元素不是 source 集合的成员，并且没有任何操作对 destination 集合执行，那么返回 0 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">smoveCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *srcset, *dstset, *ele;</span><br><span class="line">    <span class="comment">// 取出源集合</span></span><br><span class="line">    srcset = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 取出目标集合</span></span><br><span class="line">    dstset = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    <span class="comment">// 编码元素</span></span><br><span class="line">    ele = c-&gt;argv[<span class="number">3</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">3</span>]);</span><br><span class="line">    <span class="comment">/* If the source key does not exist return 0 */</span></span><br><span class="line">    <span class="comment">// 源集合不存在，直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (srcset == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        addReply(c,shared.czero);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* If the source key has the wrong type, or the destination key</span></span><br><span class="line"><span class="comment">     * is set and has the wrong type, return with an error. */</span></span><br><span class="line">    <span class="comment">// 如果源集合的类型错误</span></span><br><span class="line">    <span class="comment">// 或者目标集合存在、但是类型错误</span></span><br><span class="line">    <span class="comment">// 那么直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (checkType(c,srcset,REDIS_SET) ||</span><br><span class="line">        (dstset &amp;&amp; checkType(c,dstset,REDIS_SET))) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">/* If srcset and dstset are equal, SMOVE is a no-op */</span></span><br><span class="line">    <span class="comment">// 如果源集合和目标集合相等，那么直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (srcset == dstset) &#123;</span><br><span class="line">        addReply(c,shared.cone);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* If the element cannot be removed from the src set, return 0. */</span></span><br><span class="line">    <span class="comment">// 从源集合中移除目标元素</span></span><br><span class="line">    <span class="comment">// 如果目标元素不存在于源集合中，那么直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (!setTypeRemove(srcset,ele)) &#123;</span><br><span class="line">        addReply(c,shared.czero);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_SET,<span class="string">"srem"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">/* Remove the src set from the database when empty */</span></span><br><span class="line">    <span class="comment">// 如果源集合已经为空，那么将它从数据库中删除</span></span><br><span class="line">    <span class="keyword">if</span> (setTypeSize(srcset) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 删除集合对象</span></span><br><span class="line">        dbDelete(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 发送键修改信号</span></span><br><span class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    <span class="comment">// 将数据库设为脏</span></span><br><span class="line">    server.dirty++;</span><br><span class="line">    <span class="comment">/* Create the destination set when it doesn't exist */</span></span><br><span class="line">    <span class="comment">// 如果目标集合不存在，那么创建它</span></span><br><span class="line">    <span class="keyword">if</span> (!dstset) &#123;</span><br><span class="line">        dstset = setTypeCreate(ele);</span><br><span class="line">        dbAdd(c-&gt;db,c-&gt;argv[<span class="number">2</span>],dstset);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* An extra key has changed when ele was successfully added to dstset */</span></span><br><span class="line">    <span class="comment">// 将元素添加到目标集合</span></span><br><span class="line">    <span class="keyword">if</span> (setTypeAdd(dstset,ele)) &#123;</span><br><span class="line">        <span class="comment">// 将数据库设为脏</span></span><br><span class="line">        server.dirty++;</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_SET,<span class="string">"sadd"</span>,c-&gt;argv[<span class="number">2</span>],c-&gt;db-&gt;id);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 回复 1</span></span><br><span class="line">    addReply(c,shared.cone);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sismember——sismemberCommand"><a href="#sismember——sismemberCommand" class="headerlink" title="sismember——sismemberCommand"></a>sismember——sismemberCommand</h2><p>示例：SISMEMBER KEY VALUE</p>
+<ul>
+<li>如果成员元素是集合的成员，返回 1 。 如果成员元素不是集合的成员，或 key 不存在，返回 0 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sismemberCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *<span class="built_in">set</span>;</span><br><span class="line">    <span class="comment">// 取出集合对象</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="built_in">set</span> = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,<span class="built_in">set</span>,REDIS_SET)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 编码输入元素</span></span><br><span class="line">    c-&gt;argv[<span class="number">2</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    <span class="comment">// 检查是否存在</span></span><br><span class="line">    <span class="keyword">if</span> (setTypeIsMember(<span class="built_in">set</span>,c-&gt;argv[<span class="number">2</span>]))</span><br><span class="line">        addReply(c,shared.cone);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        addReply(c,shared.czero);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 多态 ismember 操作</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">setTypeIsMember</span><span class="params">(robj *subject, robj *value)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> llval;</span><br><span class="line">    <span class="comment">// HT</span></span><br><span class="line">    <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">        <span class="keyword">return</span> dictFind((dict*)subject-&gt;ptr,value) != <span class="literal">NULL</span>;</span><br><span class="line">    <span class="comment">// INTSET</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">        <span class="keyword">if</span> (isObjectRepresentableAsLongLong(value,&amp;llval) == REDIS_OK) &#123;</span><br><span class="line">            <span class="keyword">return</span> intsetFind((intset*)subject-&gt;ptr,llval);</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// 未知编码</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown set encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 查找失败</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="scard——scardCommand"><a href="#scard——scardCommand" class="headerlink" title="scard——scardCommand"></a>scard——scardCommand</h2><p>示例：SCARD KEY_NAME </p>
+<ul>
+<li>集合的数量。 当集合 key 不存在时，返回 0 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">scardCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *o;</span><br><span class="line">    <span class="comment">// 取出集合</span></span><br><span class="line">    <span class="keyword">if</span> ((o = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,o,REDIS_SET)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 返回集合的基数</span></span><br><span class="line">    addReplyLongLong(c,setTypeSize(o));</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 集合多态 size 函数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">setTypeSize</span><span class="params">(robj *subject)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">        <span class="keyword">return</span> dictSize((dict*)subject-&gt;ptr);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">        <span class="keyword">return</span> intsetLen((intset*)subject-&gt;ptr);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown set encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="spop——spopCommand"><a href="#spop——spopCommand" class="headerlink" title="spop——spopCommand"></a>spop——spopCommand</h2><p>示例：SPOP KEY </p>
+<ul>
+<li>被移除的随机元素。 当集合不存在或是空集时，返回 nil 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">spopCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *<span class="built_in">set</span>, *ele, *aux;</span><br><span class="line">    <span class="keyword">int64_t</span> llele;</span><br><span class="line">    <span class="keyword">int</span> encoding;</span><br><span class="line">    <span class="comment">// 取出集合</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="built_in">set</span> = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nullbulk)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,<span class="built_in">set</span>,REDIS_SET)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 从集合中随机取出一个元素</span></span><br><span class="line">    encoding = setTypeRandomElement(<span class="built_in">set</span>,&amp;ele,&amp;llele);</span><br><span class="line">    <span class="comment">// 将被取出元素从集合中删除</span></span><br><span class="line">    <span class="keyword">if</span> (encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">        ele = createStringObjectFromLongLong(llele);</span><br><span class="line">        <span class="built_in">set</span>-&gt;ptr = intsetRemove(<span class="built_in">set</span>-&gt;ptr,llele,<span class="literal">NULL</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        incrRefCount(ele);</span><br><span class="line">        setTypeRemove(<span class="built_in">set</span>,ele);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_SET,<span class="string">"spop"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">/* Replicate/AOF this command as an SREM operation */</span></span><br><span class="line">    <span class="comment">// 将这个命令当作 SREM 来传播，防止产生有害的随机性，导致数据不一致</span></span><br><span class="line">    <span class="comment">// （不同的服务器随机删除不同的元素）</span></span><br><span class="line">    aux = createStringObject(<span class="string">"SREM"</span>,<span class="number">4</span>);</span><br><span class="line">    rewriteClientCommandVector(c,<span class="number">3</span>,aux,c-&gt;argv[<span class="number">1</span>],ele);</span><br><span class="line">    decrRefCount(ele);</span><br><span class="line">    decrRefCount(aux);</span><br><span class="line">    <span class="comment">// 返回回复</span></span><br><span class="line">    addReplyBulk(c,ele);</span><br><span class="line">    <span class="comment">// 如果集合已经为空，那么从数据库中删除它</span></span><br><span class="line">    <span class="keyword">if</span> (setTypeSize(<span class="built_in">set</span>) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 删除集合</span></span><br><span class="line">        dbDelete(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 发送键修改信号</span></span><br><span class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 将数据库设为脏</span></span><br><span class="line">    server.dirty++;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">setTypeRandomElement</span><span class="params">(robj *setobj, robj **objele, <span class="keyword">int64_t</span> *llele)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (setobj-&gt;encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">        dictEntry *de = dictGetRandomKey(setobj-&gt;ptr);</span><br><span class="line">        *objele = dictGetKey(de);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (setobj-&gt;encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">        *llele = intsetRandom(setobj-&gt;ptr);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown set encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> setobj-&gt;encoding;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="srandmember——srandmemberCommand"><a href="#srandmember——srandmemberCommand" class="headerlink" title="srandmember——srandmemberCommand"></a>srandmember——srandmemberCommand</h2><p>示例：SRANDMEMBER KEY [count]</p>
+<ul>
+<li>只提供集合 key 参数时，返回一个元素；如果集合为空，返回 nil 。 如果提供了 count 参数，那么返回一个数组；如果集合为空，返回空数组。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">srandmemberCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *<span class="built_in">set</span>, *ele;</span><br><span class="line">    <span class="keyword">int64_t</span> llele;</span><br><span class="line">    <span class="keyword">int</span> encoding;</span><br><span class="line">    <span class="comment">// 如果带有 count 参数，那么调用 srandmemberWithCountCommand 来处理</span></span><br><span class="line">    <span class="keyword">if</span> (c-&gt;argc == <span class="number">3</span>) &#123;</span><br><span class="line">        srandmemberWithCountCommand(c);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 参数错误</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (c-&gt;argc &gt; <span class="number">3</span>) &#123;</span><br><span class="line">        addReply(c,shared.syntaxerr);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 随机取出单个元素就可以了</span></span><br><span class="line">    <span class="comment">// 取出集合对象</span></span><br><span class="line">    <span class="keyword">if</span> ((<span class="built_in">set</span> = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nullbulk)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,<span class="built_in">set</span>,REDIS_SET)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 随机取出一个元素</span></span><br><span class="line">    encoding = setTypeRandomElement(<span class="built_in">set</span>,&amp;ele,&amp;llele);</span><br><span class="line">    <span class="comment">// 回复</span></span><br><span class="line">    <span class="keyword">if</span> (encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">        addReplyBulkLongLong(c,llele);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        addReplyBulk(c,ele);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sinter——sinterCommand"><a href="#sinter——sinterCommand" class="headerlink" title="sinter——sinterCommand"></a>sinter——sinterCommand</h2><p>示例：SINTER KEY KEY1..KEYN</p>
+<ul>
+<li>交集成员的列表。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sinterCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    sinterGenericCommand(c,c-&gt;argv+<span class="number">1</span>,c-&gt;argc<span class="number">-1</span>,<span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sinterGenericCommand</span><span class="params">(redisClient *c, robj **setkeys, <span class="keyword">unsigned</span> <span class="keyword">long</span> setnum, robj *dstkey)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 集合数组</span></span><br><span class="line">    robj **sets = zmalloc(<span class="keyword">sizeof</span>(robj*)*setnum);</span><br><span class="line">    setTypeIterator *si;</span><br><span class="line">    robj *eleobj, *dstset = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">int64_t</span> intobj;</span><br><span class="line">    <span class="keyword">void</span> *replylen = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> j, cardinality = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> encoding;</span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; setnum; j++) &#123;</span><br><span class="line">        <span class="comment">// 取出对象</span></span><br><span class="line">        <span class="comment">// 第一次执行时，取出的是 dest 集合</span></span><br><span class="line">        <span class="comment">// 之后执行时，取出的都是 source 集合</span></span><br><span class="line">        robj *setobj = dstkey ?</span><br><span class="line">            lookupKeyWrite(c-&gt;db,setkeys[j]) :</span><br><span class="line">            lookupKeyRead(c-&gt;db,setkeys[j]);</span><br><span class="line">        <span class="comment">// 对象不存在，放弃执行，进行清理</span></span><br><span class="line">        <span class="keyword">if</span> (!setobj) &#123;</span><br><span class="line">            zfree(sets);</span><br><span class="line">            <span class="keyword">if</span> (dstkey) &#123;</span><br><span class="line">                <span class="keyword">if</span> (dbDelete(c-&gt;db,dstkey)) &#123;</span><br><span class="line">                    signalModifiedKey(c-&gt;db,dstkey);</span><br><span class="line">                    server.dirty++;</span><br><span class="line">                &#125;</span><br><span class="line">                addReply(c,shared.czero);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                addReply(c,shared.emptymultibulk);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">         </span><br><span class="line">        <span class="comment">// 检查对象的类型</span></span><br><span class="line">        <span class="keyword">if</span> (checkType(c,setobj,REDIS_SET)) &#123;</span><br><span class="line">            zfree(sets);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 将数组指针指向集合对象</span></span><br><span class="line">        sets[j] = createSetObject;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Sort sets from the smallest to largest, this will improve our</span></span><br><span class="line"><span class="comment">     * algorithm's performance */</span></span><br><span class="line">    <span class="comment">// 按基数对集合进行排序，这样提升算法的效率</span></span><br><span class="line">    qsort(sets,setnum,<span class="keyword">sizeof</span>(robj*),qsortCompareSetsByCardinality);</span><br><span class="line">    <span class="comment">/* The first thing we should output is the total number of elements...</span></span><br><span class="line"><span class="comment">     * since this is a multi-bulk write, but at this stage we don't know</span></span><br><span class="line"><span class="comment">     * the intersection set size, so we use a trick, append an empty object</span></span><br><span class="line"><span class="comment">     * to the output list and save the pointer to later modify it with the</span></span><br><span class="line"><span class="comment">     * right length */</span></span><br><span class="line">    <span class="comment">// 因为不知道结果集会有多少个元素，所有没有办法直接设置回复的数量</span></span><br><span class="line">    <span class="comment">// 这里使用了一个小技巧，直接使用一个 BUFF 列表，</span></span><br><span class="line">    <span class="comment">// 然后将之后的回复都添加到列表中</span></span><br><span class="line">    <span class="keyword">if</span> (!dstkey) &#123;</span><br><span class="line">        replylen = addDeferredMultiBulkLength(c);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">/* If we have a target key where to store the resulting set</span></span><br><span class="line"><span class="comment">         * create this key with an empty set inside */</span></span><br><span class="line">        dstset = createIntsetObject();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Iterate all the elements of the first (smallest) set, and test</span></span><br><span class="line"><span class="comment">     * the element against all the other sets, if at least one set does</span></span><br><span class="line"><span class="comment">     * not include the element it is discarded */</span></span><br><span class="line">    <span class="comment">// 遍历基数最小的第一个集合</span></span><br><span class="line">    <span class="comment">// 并将它的元素和所有其他集合进行对比</span></span><br><span class="line">    <span class="comment">// 如果有至少一个集合不包含这个元素，那么这个元素不属于交集</span></span><br><span class="line">    si = setTypeInitIterator(sets[<span class="number">0</span>]);</span><br><span class="line">    <span class="keyword">while</span>((encoding = setTypeNext(si,&amp;eleobj,&amp;intobj)) != <span class="number">-1</span>) &#123;</span><br><span class="line">        <span class="comment">// 遍历其他集合，检查元素是否在这些集合中存在</span></span><br><span class="line">        <span class="keyword">for</span> (j = <span class="number">1</span>; j &lt; setnum; j++) &#123;</span><br><span class="line">            <span class="comment">// 跳过第一个集合，因为它是结果集的起始值</span></span><br><span class="line">            <span class="keyword">if</span> (sets[j] == sets[<span class="number">0</span>]) <span class="keyword">continue</span>;</span><br><span class="line">            <span class="comment">// 元素的编码为 INTSET</span></span><br><span class="line">            <span class="comment">// 在其他集合中查找这个对象是否存在</span></span><br><span class="line">            <span class="keyword">if</span> (encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">                <span class="comment">/* intset with intset is simple... and fast */</span></span><br><span class="line">                <span class="keyword">if</span> (sets[j]-&gt;encoding == REDIS_ENCODING_INTSET &amp;&amp;</span><br><span class="line">                    !intsetFind((intset*)sets[j]-&gt;ptr,intobj))</span><br><span class="line">                &#123;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="comment">/* in order to compare an integer with an object we</span></span><br><span class="line"><span class="comment">                 * have to use the generic function, creating an object</span></span><br><span class="line"><span class="comment">                 * for this */</span></span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (sets[j]-&gt;encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">                    eleobj = createStringObjectFromLongLong(intobj);</span><br><span class="line">                    <span class="keyword">if</span> (!setTypeIsMember(sets[j],eleobj)) &#123;</span><br><span class="line">                        decrRefCount(eleobj);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    decrRefCount(eleobj);</span><br><span class="line">                &#125;</span><br><span class="line">            <span class="comment">// 元素的编码为 字典</span></span><br><span class="line">            <span class="comment">// 在其他集合中查找这个对象是否存在</span></span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">                <span class="comment">/* Optimization... if the source object is integer</span></span><br><span class="line"><span class="comment">                 * encoded AND the target set is an intset, we can get</span></span><br><span class="line"><span class="comment">                 * a much faster path. */</span></span><br><span class="line">                <span class="keyword">if</span> (eleobj-&gt;encoding == REDIS_ENCODING_INT &amp;&amp;</span><br><span class="line">                    sets[j]-&gt;encoding == REDIS_ENCODING_INTSET &amp;&amp;</span><br><span class="line">                    !intsetFind((intset*)sets[j]-&gt;ptr,(<span class="keyword">long</span>)eleobj-&gt;ptr))</span><br><span class="line">                &#123;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="comment">/* else... object to object check is easy as we use the</span></span><br><span class="line"><span class="comment">                 * type agnostic API here. */</span></span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!setTypeIsMember(sets[j],eleobj)) &#123;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/* Only take action when all sets contain the member */</span></span><br><span class="line">        <span class="comment">// 如果所有集合都带有目标元素的话，那么执行以下代码</span></span><br><span class="line">        <span class="keyword">if</span> (j == setnum) &#123;</span><br><span class="line">            <span class="comment">// SINTER 命令，直接返回结果集元素</span></span><br><span class="line">            <span class="keyword">if</span> (!dstkey) &#123;</span><br><span class="line">                <span class="keyword">if</span> (encoding == REDIS_ENCODING_HT)</span><br><span class="line">                    addReplyBulk(c,eleobj);</span><br><span class="line">                <span class="keyword">else</span></span><br><span class="line">                    addReplyBulkLongLong(c,intobj);</span><br><span class="line">                cardinality++;</span><br><span class="line">            <span class="comment">// SINTERSTORE 命令，将结果添加到结果集中</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> (encoding == REDIS_ENCODING_INTSET) &#123;</span><br><span class="line">                    eleobj = createStringObjectFromLongLong(intobj);</span><br><span class="line">                    setTypeAdd(dstset,eleobj);</span><br><span class="line">                    decrRefCount(eleobj);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    setTypeAdd(dstset,eleobj);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    setTypeReleaseIterator(si);</span><br><span class="line">    <span class="comment">// SINTERSTORE 命令，将结果集关联到数据库</span></span><br><span class="line">    <span class="keyword">if</span> (dstkey) &#123;</span><br><span class="line">        <span class="comment">/* Store the resulting set into the target, if the intersection</span></span><br><span class="line"><span class="comment">         * is not an empty set. */</span></span><br><span class="line">        <span class="comment">// 删除现在可能有的 dstkey</span></span><br><span class="line">        <span class="keyword">int</span> deleted = dbDelete(c-&gt;db,dstkey);</span><br><span class="line">        <span class="comment">// 如果结果集非空，那么将它关联到数据库中</span></span><br><span class="line">        <span class="keyword">if</span> (setTypeSize(dstset) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            dbAdd(c-&gt;db,dstkey,dstset);</span><br><span class="line">            addReplyLongLong(c,setTypeSize(dstset));</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_SET,<span class="string">"sinterstore"</span>,</span><br><span class="line">                dstkey,c-&gt;db-&gt;id);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            decrRefCount(dstset);</span><br><span class="line">            addReply(c,shared.czero);</span><br><span class="line">            <span class="keyword">if</span> (deleted)</span><br><span class="line">                notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,</span><br><span class="line">                    dstkey,c-&gt;db-&gt;id);</span><br><span class="line">        &#125;</span><br><span class="line">        signalModifiedKey(c-&gt;db,dstkey);</span><br><span class="line">        server.dirty++;</span><br><span class="line">    <span class="comment">// SINTER 命令，回复结果集的基数</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        setDeferredMultiBulkLength(c,replylen,cardinality);</span><br><span class="line">    &#125;</span><br><span class="line">    zfree(sets);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sinterstore——sinterstoreCommand"><a href="#sinterstore——sinterstoreCommand" class="headerlink" title="sinterstore——sinterstoreCommand"></a>sinterstore——sinterstoreCommand</h2><p>示例：SINTERSTORE DESTINATION_KEY KEY KEY1..KEYN </p>
+<ul>
+<li>返回存储交集的集合的元素数量。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sinterstoreCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    sinterGenericCommand(c,c-&gt;argv+<span class="number">2</span>,c-&gt;argc<span class="number">-2</span>,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sunion——sunionCommand"><a href="#sunion——sunionCommand" class="headerlink" title="sunion——sunionCommand"></a>sunion——sunionCommand</h2><p>示例：SUNION KEY KEY1..KEYN</p>
+<ul>
+<li>并集成员的列表。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sunionCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    sunionDiffGenericCommand(c,c-&gt;argv+<span class="number">1</span>,c-&gt;argc<span class="number">-1</span>,<span class="literal">NULL</span>,REDIS_OP_UNION);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * 命令的类型</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REDIS_OP_UNION 0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REDIS_OP_DIFF 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> REDIS_OP_INTER 2</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sunionDiffGenericCommand</span><span class="params">(redisClient *c, robj **setkeys, <span class="keyword">int</span> setnum, robj *dstkey, <span class="keyword">int</span> op)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 集合数组</span></span><br><span class="line">    robj **sets = zmalloc(<span class="keyword">sizeof</span>(robj*)*setnum);</span><br><span class="line">    setTypeIterator *si;</span><br><span class="line">    robj *ele, *dstset = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">int</span> j, cardinality = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> diff_algo = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 取出所有集合对象，并添加到集合数组中</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; setnum; j++) &#123;</span><br><span class="line">        robj *setobj = dstkey ?</span><br><span class="line">            lookupKeyWrite(c-&gt;db,setkeys[j]) :</span><br><span class="line">            lookupKeyRead(c-&gt;db,setkeys[j]);</span><br><span class="line">        <span class="comment">// 不存在的集合当作 NULL 来处理</span></span><br><span class="line">        <span class="keyword">if</span> (!setobj) &#123;</span><br><span class="line">            sets[j] = <span class="literal">NULL</span>;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 有对象不是集合，停止执行，进行清理</span></span><br><span class="line">        <span class="keyword">if</span> (checkType(c,setobj,REDIS_SET)) &#123;</span><br><span class="line">            zfree(sets);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 记录对象</span></span><br><span class="line">        sets[j] = setobj;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Select what DIFF algorithm to use.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 选择使用那个算法来执行计算</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * Algorithm 1 is O(N*M) where N is the size of the element first set</span></span><br><span class="line"><span class="comment">     * and M the total number of sets.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 算法 1 的复杂度为 O(N*M) ，其中 N 为第一个集合的基数，</span></span><br><span class="line"><span class="comment">     * 而 M 则为其他集合的数量。</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * Algorithm 2 is O(N) where N is the total number of elements in all</span></span><br><span class="line"><span class="comment">     * the sets.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 算法 2 的复杂度为 O(N) ，其中 N 为所有集合中的元素数量总数。</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * We compute what is the best bet with the current input here.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 程序通过考察输入来决定使用那个算法</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (op == REDIS_OP_DIFF &amp;&amp; sets[<span class="number">0</span>]) &#123;</span><br><span class="line">        <span class="keyword">long</span> <span class="keyword">long</span> algo_one_work = <span class="number">0</span>, algo_two_work = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">// 遍历所有集合</span></span><br><span class="line">        <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; setnum; j++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (sets[j] == <span class="literal">NULL</span>) <span class="keyword">continue</span>;</span><br><span class="line">            <span class="comment">// 计算 setnum 乘以 sets[0] 的基数之积</span></span><br><span class="line">            algo_one_work += setTypeSize(sets[<span class="number">0</span>]);</span><br><span class="line">            <span class="comment">// 计算所有集合的基数之和</span></span><br><span class="line">            algo_two_work += setTypeSize(sets[j]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/* Algorithm 1 has better constant times and performs less operations</span></span><br><span class="line"><span class="comment">         * if there are elements in common. Give it some advantage. */</span></span><br><span class="line">        <span class="comment">// 算法 1 的常数比较低，优先考虑算法 1</span></span><br><span class="line">        algo_one_work /= <span class="number">2</span>;</span><br><span class="line">        diff_algo = (algo_one_work &lt;= algo_two_work) ? <span class="number">1</span> : <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">if</span> (diff_algo == <span class="number">1</span> &amp;&amp; setnum &gt; <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="comment">/* With algorithm 1 it is better to order the sets to subtract</span></span><br><span class="line"><span class="comment">             * by decreasing size, so that we are more likely to find</span></span><br><span class="line"><span class="comment">             * duplicated elements ASAP. */</span></span><br><span class="line">            <span class="comment">// 如果使用的是算法 1 ，那么最好对 sets[0] 以外的其他集合进行排序</span></span><br><span class="line">            <span class="comment">// 这样有助于优化算法的性能</span></span><br><span class="line">            qsort(sets+<span class="number">1</span>,setnum<span class="number">-1</span>,<span class="keyword">sizeof</span>(robj*),</span><br><span class="line">                qsortCompareSetsByRevCardinality);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* We need a temp set object to store our union. If the dstkey</span></span><br><span class="line"><span class="comment">     * is not NULL (that is, we are inside an SUNIONSTORE operation) then</span></span><br><span class="line"><span class="comment">     * this set object will be the resulting object to set into the target key</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * 使用一个临时集合来保存结果集，如果程序执行的是 SUNIONSTORE 命令，</span></span><br><span class="line"><span class="comment">     * 那么这个结果将会成为将来的集合值对象。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    dstset = createIntsetObject();</span><br><span class="line">    <span class="comment">// 执行的是并集计算</span></span><br><span class="line">    <span class="keyword">if</span> (op == REDIS_OP_UNION) &#123;</span><br><span class="line">        <span class="comment">/* Union is trivial, just add every element of every set to the</span></span><br><span class="line"><span class="comment">         * temporary set. */</span></span><br><span class="line">        <span class="comment">// 遍历所有集合，将元素添加到结果集里就可以了</span></span><br><span class="line">        <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; setnum; j++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!sets[j]) <span class="keyword">continue</span>; <span class="comment">/* non existing keys are like empty sets */</span></span><br><span class="line">            si = setTypeInitIterator(sets[j]);</span><br><span class="line">            <span class="keyword">while</span>((ele = setTypeNextObject(si)) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">                <span class="comment">// setTypeAdd 只在集合不存在时，才会将元素添加到集合，并返回 1</span></span><br><span class="line">                <span class="keyword">if</span> (setTypeAdd(dstset,ele)) cardinality++;</span><br><span class="line">                decrRefCount(ele);</span><br><span class="line">            &#125;</span><br><span class="line">            setTypeReleaseIterator(si);</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// 执行的是差集计算，并且使用算法 1</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (op == REDIS_OP_DIFF &amp;&amp; sets[<span class="number">0</span>] &amp;&amp; diff_algo == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="comment">/* DIFF Algorithm 1:</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * 差集算法 1 ：</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * We perform the diff by iterating all the elements of the first set,</span></span><br><span class="line"><span class="comment">         * and only adding it to the target set if the element does not exist</span></span><br><span class="line"><span class="comment">         * into all the other sets.</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * 程序遍历 sets[0] 集合中的所有元素，</span></span><br><span class="line"><span class="comment">         * 并将这个元素和其他集合的所有元素进行对比，</span></span><br><span class="line"><span class="comment">         * 只有这个元素不存在于其他所有集合时，</span></span><br><span class="line"><span class="comment">         * 才将这个元素添加到结果集。</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * This way we perform at max N*M operations, where N is the size of</span></span><br><span class="line"><span class="comment">         * the first set, and M the number of sets.</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * 这个算法执行最多 N*M 步， N 是第一个集合的基数，</span></span><br><span class="line"><span class="comment">         * 而 M 是其他集合的数量。</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        si = setTypeInitIterator(sets[<span class="number">0</span>]);</span><br><span class="line">        <span class="keyword">while</span>((ele = setTypeNextObject(si)) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            <span class="comment">// 检查元素在其他集合是否存在</span></span><br><span class="line">            <span class="keyword">for</span> (j = <span class="number">1</span>; j &lt; setnum; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (!sets[j]) <span class="keyword">continue</span>; <span class="comment">/* no key is an empty set. */</span></span><br><span class="line">                <span class="keyword">if</span> (sets[j] == sets[<span class="number">0</span>]) <span class="keyword">break</span>; <span class="comment">/* same set! */</span></span><br><span class="line">                <span class="keyword">if</span> (setTypeIsMember(sets[j],ele)) <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 只有元素在所有其他集合中都不存在时，才将它添加到结果集中</span></span><br><span class="line">            <span class="keyword">if</span> (j == setnum) &#123;</span><br><span class="line">                <span class="comment">/* There is no other set with this element. Add it. */</span></span><br><span class="line">                setTypeAdd(dstset,ele);</span><br><span class="line">                cardinality++;</span><br><span class="line">            &#125;</span><br><span class="line">            decrRefCount(ele);</span><br><span class="line">        &#125;</span><br><span class="line">        setTypeReleaseIterator(si);</span><br><span class="line">    <span class="comment">// 执行的是差集计算，并且使用算法 2</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (op == REDIS_OP_DIFF &amp;&amp; sets[<span class="number">0</span>] &amp;&amp; diff_algo == <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="comment">/* DIFF Algorithm 2:</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * 差集算法 2 ：</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * Add all the elements of the first set to the auxiliary set.</span></span><br><span class="line"><span class="comment">         * Then remove all the elements of all the next sets from it.</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * 将 sets[0] 的所有元素都添加到结果集中，</span></span><br><span class="line"><span class="comment">         * 然后遍历其他所有集合，将相同的元素从结果集中删除。</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * This is O(N) where N is the sum of all the elements in every set.</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * 算法复杂度为 O(N) ，N 为所有集合的基数之和。</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; setnum; j++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!sets[j]) <span class="keyword">continue</span>; <span class="comment">/* non existing keys are like empty sets */</span></span><br><span class="line">            si = setTypeInitIterator(sets[j]);</span><br><span class="line">            <span class="keyword">while</span>((ele = setTypeNextObject(si)) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">                <span class="comment">// sets[0] 时，将所有元素添加到集合</span></span><br><span class="line">                <span class="keyword">if</span> (j == <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (setTypeAdd(dstset,ele)) cardinality++;</span><br><span class="line">                <span class="comment">// 不是 sets[0] 时，将所有集合从结果集中移除</span></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (setTypeRemove(dstset,ele)) cardinality--;</span><br><span class="line">                &#125;</span><br><span class="line">                decrRefCount(ele);</span><br><span class="line">            &#125;</span><br><span class="line">            setTypeReleaseIterator(si);</span><br><span class="line">            <span class="comment">/* Exit if result set is empty as any additional removal</span></span><br><span class="line"><span class="comment">             * of elements will have no effect. */</span></span><br><span class="line">            <span class="keyword">if</span> (cardinality == <span class="number">0</span>) <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Output the content of the resulting set, if not in STORE mode */</span></span><br><span class="line">    <span class="comment">// 执行的是 SDIFF 或者 SUNION</span></span><br><span class="line">    <span class="comment">// 打印结果集中的所有元素</span></span><br><span class="line">    <span class="keyword">if</span> (!dstkey) &#123;</span><br><span class="line">        addReplyMultiBulkLen(c,cardinality);</span><br><span class="line">        <span class="comment">// 遍历并回复结果集中的元素</span></span><br><span class="line">        si = setTypeInitIterator(dstset);</span><br><span class="line">        <span class="keyword">while</span>((ele = setTypeNextObject(si)) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            addReplyBulk(c,ele);</span><br><span class="line">            decrRefCount(ele);</span><br><span class="line">        &#125;</span><br><span class="line">        setTypeReleaseIterator(si);</span><br><span class="line">        decrRefCount(dstset);</span><br><span class="line">    <span class="comment">// 执行的是 SDIFFSTORE 或者 SUNIONSTORE</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">/* If we have a target key where to store the resulting set</span></span><br><span class="line"><span class="comment">         * create this key with the result set inside */</span></span><br><span class="line">        <span class="comment">// 现删除现在可能有的 dstkey</span></span><br><span class="line">        <span class="keyword">int</span> deleted = dbDelete(c-&gt;db,dstkey);</span><br><span class="line">        <span class="comment">// 如果结果集不为空，将它关联到数据库中</span></span><br><span class="line">        <span class="keyword">if</span> (setTypeSize(dstset) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            dbAdd(c-&gt;db,dstkey,dstset);</span><br><span class="line">            <span class="comment">// 返回结果集的基数</span></span><br><span class="line">            addReplyLongLong(c,setTypeSize(dstset));</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_SET,</span><br><span class="line">                op == REDIS_OP_UNION ? <span class="string">"sunionstore"</span> : <span class="string">"sdiffstore"</span>,</span><br><span class="line">                dstkey,c-&gt;db-&gt;id);</span><br><span class="line">        <span class="comment">// 结果集为空</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            decrRefCount(dstset);</span><br><span class="line">            <span class="comment">// 返回 0</span></span><br><span class="line">            addReply(c,shared.czero);</span><br><span class="line">            <span class="keyword">if</span> (deleted)</span><br><span class="line">                notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,</span><br><span class="line">                    dstkey,c-&gt;db-&gt;id);</span><br><span class="line">        &#125;</span><br><span class="line">        signalModifiedKey(c-&gt;db,dstkey);</span><br><span class="line">        server.dirty++;</span><br><span class="line">    &#125;</span><br><span class="line">    zfree(sets);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sunionstore——sunionstoreCommand"><a href="#sunionstore——sunionstoreCommand" class="headerlink" title="sunionstore——sunionstoreCommand"></a>sunionstore——sunionstoreCommand</h2><p>示例：SUNIONSTORE DESTINATION KEY KEY1..KEYN</p>
+<ul>
+<li>结果集中的元素数量。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sunionstoreCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    sunionDiffGenericCommand(c,c-&gt;argv+<span class="number">2</span>,c-&gt;argc<span class="number">-2</span>,c-&gt;argv[<span class="number">1</span>],REDIS_OP_UNION);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sdiff——sdiffCommand"><a href="#sdiff——sdiffCommand" class="headerlink" title="sdiff——sdiffCommand"></a>sdiff——sdiffCommand</h2><p>示例：SDIFF FIRST_KEY OTHER_KEY1..OTHER_KEYN </p>
+<ul>
+<li>包含差集成员的列表。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sdiffCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    sunionDiffGenericCommand(c,c-&gt;argv+<span class="number">1</span>,c-&gt;argc<span class="number">-1</span>,<span class="literal">NULL</span>,REDIS_OP_DIFF);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sdiffstore——sdiffstoreCommand"><a href="#sdiffstore——sdiffstoreCommand" class="headerlink" title="sdiffstore——sdiffstoreCommand"></a>sdiffstore——sdiffstoreCommand</h2><p>示例：SDIFFSTORE DESTINATION_KEY KEY1..KEYN </p>
+<ul>
+<li>结果集中的元素数量。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sdiffstoreCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    sunionDiffGenericCommand(c,c-&gt;argv+<span class="number">2</span>,c-&gt;argc<span class="number">-2</span>,c-&gt;argv[<span class="number">1</span>],REDIS_OP_DIFF);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="smembers——sinterCommand"><a href="#smembers——sinterCommand" class="headerlink" title="smembers——sinterCommand"></a>smembers——sinterCommand</h2><p>示例：SMEMBERS key</p>
+<ul>
+<li>集合中的所有成员。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sinterCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    sinterGenericCommand(c,c-&gt;argv+<span class="number">1</span>,c-&gt;argc<span class="number">-1</span>,<span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="sscan——sscanCommand"><a href="#sscan——sscanCommand" class="headerlink" title="sscan——sscanCommand"></a>sscan——sscanCommand</h2><p>示例：SSCAN key cursor [MATCH pattern] [COUNT count]</p>
+<ul>
+<li>数组列表。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sscanCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *<span class="built_in">set</span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> cursor;</span><br><span class="line">    <span class="keyword">if</span> (parseScanCursorOrReply(c,c-&gt;argv[<span class="number">2</span>],&amp;cursor) == REDIS_ERR) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">if</span> ((<span class="built_in">set</span> = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.emptyscan)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,<span class="built_in">set</span>,REDIS_SET)) <span class="keyword">return</span>;</span><br><span class="line">    scanGenericCommand(c,<span class="built_in">set</span>,cursor);</span><br><span class="line">&#125;</span><br><span class="line">  </span><br><span class="line"><span class="comment">/* This command implements SCAN, HSCAN and SSCAN commands.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 这是 SCAN 、 HSCAN 、 SSCAN 命令的实现函数。</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If object 'o' is passed, then it must be a Hash or Set object, otherwise</span></span><br><span class="line"><span class="comment"> * if 'o' is NULL the command will operate on the dictionary associated with</span></span><br><span class="line"><span class="comment"> * the current database.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 如果给定了对象 o ，那么它必须是一个哈希对象或者集合对象，</span></span><br><span class="line"><span class="comment"> * 如果 o 为 NULL 的话，函数将使用当前数据库作为迭代对象。</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * When 'o' is not NULL the function assumes that the first argument in</span></span><br><span class="line"><span class="comment"> * the client arguments vector is a key so it skips it before iterating</span></span><br><span class="line"><span class="comment"> * in order to parse options.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 如果参数 o 不为 NULL ，那么说明它是一个键对象，函数将跳过这些键对象，</span></span><br><span class="line"><span class="comment"> * 对给定的命令选项进行分析（parse）。</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * In the case of a Hash object the function returns both the field and value</span></span><br><span class="line"><span class="comment"> * of every element on the Hash.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 如果被迭代的是哈希对象，那么函数返回的是键值对。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">scanGenericCommand</span><span class="params">(redisClient *c, robj *o, <span class="keyword">unsigned</span> <span class="keyword">long</span> cursor)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> rv;</span><br><span class="line">    <span class="keyword">int</span> i, j;</span><br><span class="line">    <span class="keyword">char</span> buf[REDIS_LONGSTR_SIZE];</span><br><span class="line">    <span class="built_in">list</span> *keys = listCreate();</span><br><span class="line">    listNode *node, *nextnode;</span><br><span class="line">    <span class="keyword">long</span> count = <span class="number">10</span>;</span><br><span class="line">    sds pat;</span><br><span class="line">    <span class="keyword">int</span> patlen, use_pattern = <span class="number">0</span>;</span><br><span class="line">    dict *ht;</span><br><span class="line">    <span class="comment">/* Object must be NULL (to iterate keys names), or the type of the object</span></span><br><span class="line"><span class="comment">     * must be Set, Sorted Set, or Hash. */</span></span><br><span class="line">    <span class="comment">// 输入类型检查</span></span><br><span class="line">    redisAssert(o == <span class="literal">NULL</span> || o-&gt;type == REDIS_SET || o-&gt;type == REDIS_HASH ||</span><br><span class="line">                o-&gt;type == REDIS_ZSET);</span><br><span class="line">    <span class="comment">/* Set i to the first option argument. The previous one is the cursor. */</span></span><br><span class="line">    <span class="comment">// 设置第一个选项参数的索引位置</span></span><br><span class="line">    <span class="comment">// 0    1      2      3 </span></span><br><span class="line">    <span class="comment">// SCAN OPTION &lt;op_arg&gt;         SCAN 命令的选项值从索引 2 开始</span></span><br><span class="line">    <span class="comment">// HSCAN &lt;key&gt; OPTION &lt;op_arg&gt;  而其他 *SCAN 命令的选项值从索引 3 开始</span></span><br><span class="line">    i = (o == <span class="literal">NULL</span>) ? <span class="number">2</span> : <span class="number">3</span>; <span class="comment">/* Skip the key argument if needed. */</span></span><br><span class="line">    <span class="comment">/* Step 1: Parse options. */</span></span><br><span class="line">    <span class="comment">// 分析选项参数</span></span><br><span class="line">    <span class="keyword">while</span> (i &lt; c-&gt;argc) &#123;</span><br><span class="line">        j = c-&gt;argc - i;</span><br><span class="line">        <span class="comment">// COUNT &lt;number&gt;</span></span><br><span class="line">        <span class="keyword">if</span> (!strcasecmp(c-&gt;argv[i]-&gt;ptr, <span class="string">"count"</span>) &amp;&amp; j &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (getLongFromObjectOrReply(c, c-&gt;argv[i+<span class="number">1</span>], &amp;count, <span class="literal">NULL</span>)</span><br><span class="line">                != REDIS_OK)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">goto</span> cleanup;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (count &lt; <span class="number">1</span>) &#123;</span><br><span class="line">                addReply(c,shared.syntaxerr);</span><br><span class="line">                <span class="keyword">goto</span> cleanup;</span><br><span class="line">            &#125;</span><br><span class="line">            i += <span class="number">2</span>;</span><br><span class="line">        <span class="comment">// MATCH &lt;pattern&gt;</span></span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!strcasecmp(c-&gt;argv[i]-&gt;ptr, <span class="string">"match"</span>) &amp;&amp; j &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">            pat = c-&gt;argv[i+<span class="number">1</span>]-&gt;ptr;</span><br><span class="line">            patlen = sdslen(pat);</span><br><span class="line">            <span class="comment">/* The pattern always matches if it is exactly "*", so it is</span></span><br><span class="line"><span class="comment">             * equivalent to disabling it. */</span></span><br><span class="line">            use_pattern = !(pat[<span class="number">0</span>] == <span class="string">'*'</span> &amp;&amp; patlen == <span class="number">1</span>);</span><br><span class="line">            i += <span class="number">2</span>;</span><br><span class="line">        <span class="comment">// error</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            addReply(c,shared.syntaxerr);</span><br><span class="line">            <span class="keyword">goto</span> cleanup;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Step 2: Iterate the collection.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * Note that if the object is encoded with a ziplist, intset, or any other</span></span><br><span class="line"><span class="comment">     * representation that is not a hash table, we are sure that it is also</span></span><br><span class="line"><span class="comment">     * composed of a small number of elements. So to avoid taking state we</span></span><br><span class="line"><span class="comment">     * just return everything inside the object in a single call, setting the</span></span><br><span class="line"><span class="comment">     * cursor to zero to signal the end of the iteration. */</span></span><br><span class="line">     <span class="comment">// 如果对象的底层实现为 ziplist 、intset 而不是哈希表，</span></span><br><span class="line">     <span class="comment">// 那么这些对象应该只包含了少量元素，</span></span><br><span class="line">     <span class="comment">// 为了保持不让服务器记录迭代状态的设计</span></span><br><span class="line">     <span class="comment">// 我们将 ziplist 或者 intset 里面的所有元素都一次返回给调用者</span></span><br><span class="line">     <span class="comment">// 并向调用者返回游标（cursor） 0</span></span><br><span class="line">    <span class="comment">/* Handle the case of a hash table. */</span></span><br><span class="line">    ht = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">if</span> (o == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="comment">// 迭代目标为数据库</span></span><br><span class="line">        ht = c-&gt;db-&gt;dict;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;type == REDIS_SET &amp;&amp; o-&gt;encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">        <span class="comment">// 迭代目标为 HT 编码的集合</span></span><br><span class="line">        ht = o-&gt;ptr;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;type == REDIS_HASH &amp;&amp; o-&gt;encoding == REDIS_ENCODING_HT) &#123;</span><br><span class="line">        <span class="comment">// 迭代目标为 HT 编码的哈希</span></span><br><span class="line">        ht = o-&gt;ptr;</span><br><span class="line">        count *= <span class="number">2</span>; <span class="comment">/* We return key / value for this type. */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;type == REDIS_ZSET &amp;&amp; o-&gt;encoding == REDIS_ENCODING_SKIPLIST) &#123;</span><br><span class="line">        <span class="comment">// 迭代目标为 HT 编码的跳跃表</span></span><br><span class="line">        zset *zs = o-&gt;ptr;</span><br><span class="line">        ht = zs-&gt;dict;</span><br><span class="line">        count *= <span class="number">2</span>; <span class="comment">/* We return key / value for this type. */</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (ht) &#123;</span><br><span class="line">        <span class="keyword">void</span> *privdata[<span class="number">2</span>];</span><br><span class="line">        <span class="comment">/* We pass two pointers to the callback: the list to which it will</span></span><br><span class="line"><span class="comment">         * add new elements, and the object containing the dictionary so that</span></span><br><span class="line"><span class="comment">         * it is possible to fetch more data in a type-dependent way. */</span></span><br><span class="line">        <span class="comment">// 我们向回调函数传入两个指针：</span></span><br><span class="line">        <span class="comment">// 一个是用于记录被迭代元素的列表</span></span><br><span class="line">        <span class="comment">// 另一个是字典对象</span></span><br><span class="line">        <span class="comment">// 从而实现类型无关的数据提取操作</span></span><br><span class="line">        privdata[<span class="number">0</span>] = keys;</span><br><span class="line">        privdata[<span class="number">1</span>] = o;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            cursor = dictScan(ht, cursor, scanCallback, privdata);</span><br><span class="line">        &#125; <span class="keyword">while</span> (cursor &amp;&amp; listLength(keys) &lt; count);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;type == REDIS_SET) &#123;</span><br><span class="line">        <span class="keyword">int</span> pos = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int64_t</span> ll;</span><br><span class="line">        <span class="keyword">while</span>(intsetGet(o-&gt;ptr,pos++,&amp;ll))</span><br><span class="line">            listAddNodeTail(keys,createStringObjectFromLongLong(ll));</span><br><span class="line">        cursor = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;type == REDIS_HASH || o-&gt;type == REDIS_ZSET) &#123;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">char</span> *p = ziplistIndex(o-&gt;ptr,<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">char</span> *vstr;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> vlen;</span><br><span class="line">        <span class="keyword">long</span> <span class="keyword">long</span> vll;</span><br><span class="line">        <span class="keyword">while</span>(p) &#123;</span><br><span class="line">            ziplistGet(p,&amp;vstr,&amp;vlen,&amp;vll);</span><br><span class="line">            listAddNodeTail(keys,</span><br><span class="line">                (vstr != <span class="literal">NULL</span>) ? createStringObject((<span class="keyword">char</span>*)vstr,vlen) :</span><br><span class="line">                                 createStringObjectFromLongLong(vll));</span><br><span class="line">            p = ziplistNext(o-&gt;ptr,p);</span><br><span class="line">        &#125;</span><br><span class="line">        cursor = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Not handled encoding in SCAN."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Step 3: Filter elements. */</span></span><br><span class="line">    node = listFirst(keys);</span><br><span class="line">    <span class="keyword">while</span> (node) &#123;</span><br><span class="line">        robj *kobj = listNodeValue(node);</span><br><span class="line">        nextnode = listNextNode(node);</span><br><span class="line">        <span class="keyword">int</span> filter = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">/* Filter element if it does not match the pattern. */</span></span><br><span class="line">        <span class="keyword">if</span> (!filter &amp;&amp; use_pattern) &#123;</span><br><span class="line">            <span class="keyword">if</span> (sdsEncodedObject(kobj)) &#123;</span><br><span class="line">                <span class="keyword">if</span> (!stringmatchlen(pat, patlen, kobj-&gt;ptr, sdslen(kobj-&gt;ptr), <span class="number">0</span>))</span><br><span class="line">                    filter = <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">char</span> buf[REDIS_LONGSTR_SIZE];</span><br><span class="line">                <span class="keyword">int</span> len;</span><br><span class="line">                redisAssert(kobj-&gt;encoding == REDIS_ENCODING_INT);</span><br><span class="line">                len = ll2string(buf,<span class="keyword">sizeof</span>(buf),(<span class="keyword">long</span>)kobj-&gt;ptr);</span><br><span class="line">                <span class="keyword">if</span> (!stringmatchlen(pat, patlen, buf, len, <span class="number">0</span>)) filter = <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/* Filter element if it is an expired key. */</span></span><br><span class="line">        <span class="keyword">if</span> (!filter &amp;&amp; o == <span class="literal">NULL</span> &amp;&amp; expireIfNeeded(c-&gt;db, kobj)) filter = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">/* Remove the element and its associted value if needed. */</span></span><br><span class="line">        <span class="keyword">if</span> (filter) &#123;</span><br><span class="line">            decrRefCount(kobj);</span><br><span class="line">            listDelNode(keys, node);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/* If this is a hash or a sorted set, we have a flat list of</span></span><br><span class="line"><span class="comment">         * key-value elements, so if this element was filtered, remove the</span></span><br><span class="line"><span class="comment">         * value, or skip it if it was not filtered: we only match keys. */</span></span><br><span class="line">        <span class="keyword">if</span> (o &amp;&amp; (o-&gt;type == REDIS_ZSET || o-&gt;type == REDIS_HASH)) &#123;</span><br><span class="line">            node = nextnode;</span><br><span class="line">            nextnode = listNextNode(node);</span><br><span class="line">            <span class="keyword">if</span> (filter) &#123;</span><br><span class="line">                kobj = listNodeValue(node);</span><br><span class="line">                decrRefCount(kobj);</span><br><span class="line">                listDelNode(keys, node);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        node = nextnode;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Step 4: Reply to the client. */</span></span><br><span class="line">    addReplyMultiBulkLen(c, <span class="number">2</span>);</span><br><span class="line">    rv = <span class="built_in">snprintf</span>(buf, <span class="keyword">sizeof</span>(buf), <span class="string">"%lu"</span>, cursor);</span><br><span class="line">    redisAssert(rv &lt; <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    addReplyBulkCBuffer(c, buf, rv);</span><br><span class="line">    addReplyMultiBulkLen(c, listLength(keys));</span><br><span class="line">    <span class="keyword">while</span> ((node = listFirst(keys)) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">        robj *kobj = listNodeValue(node);</span><br><span class="line">        addReplyBulk(c, kobj);</span><br><span class="line">        decrRefCount(kobj);</span><br><span class="line">        listDelNode(keys, node);</span><br><span class="line">    &#125;</span><br><span class="line">cleanup:</span><br><span class="line">    listSetFreeMethod(keys,decrRefCountVoid);</span><br><span class="line">    listRelease(keys);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>作用</th>
+<th>intset编码时间复杂度</th>
+<th>hashtable编码时间复杂度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SADD</td>
+<td>将一个或多个 <code>member</code> 元素加入到集合 <code>key</code> 当中</td>
+<td>O(N)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>SCARD</td>
+<td>返回指定集合所包含的元素数量</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>SISMEMBER</td>
+<td>判断元素是否是指定集合中的成员</td>
+<td>O(log(n))</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>SMEMBERS</td>
+<td>返回指定集合的所有成员</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>SRANDMEMBER</td>
+<td>返回指定集合的count个随机成员</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>SPOP</td>
+<td>移除并返回指定集合中的一个随机元素</td>
+<td>O(N)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>SREM</td>
+<td>移除指定集合中一个或者多个元素</td>
+<td>O(N)</td>
+<td>O(1)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/17/redis-源码学习-hash/" rel="next" title="redis-源码学习-hash">
+                <i class="fa fa-chevron-left"></i> redis-源码学习-hash
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/17/redis-源码学习-zset/" rel="prev" title="redis-源码学习-zset">
+                redis-源码学习-zset <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="SVz">
+            
+              <p class="site-author-name" itemprop="name">SVz</p>
+              <p class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">116</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/Algothrim/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">29</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/SVz777" title="GitHub &rarr; https://github.com/SVz777" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:903943711@qq.com" title="E-Mail &rarr; mailto:903943711@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#sadd——saddCommand"><span class="nav-number">1.</span> <span class="nav-text">sadd——saddCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#srem——sremCommand"><span class="nav-number">2.</span> <span class="nav-text">srem——sremCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#smove——smoveCommand"><span class="nav-number">3.</span> <span class="nav-text">smove——smoveCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sismember——sismemberCommand"><span class="nav-number">4.</span> <span class="nav-text">sismember——sismemberCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#scard——scardCommand"><span class="nav-number">5.</span> <span class="nav-text">scard——scardCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spop——spopCommand"><span class="nav-number">6.</span> <span class="nav-text">spop——spopCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#srandmember——srandmemberCommand"><span class="nav-number">7.</span> <span class="nav-text">srandmember——srandmemberCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sinter——sinterCommand"><span class="nav-number">8.</span> <span class="nav-text">sinter——sinterCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sinterstore——sinterstoreCommand"><span class="nav-number">9.</span> <span class="nav-text">sinterstore——sinterstoreCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sunion——sunionCommand"><span class="nav-number">10.</span> <span class="nav-text">sunion——sunionCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sunionstore——sunionstoreCommand"><span class="nav-number">11.</span> <span class="nav-text">sunionstore——sunionstoreCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sdiff——sdiffCommand"><span class="nav-number">12.</span> <span class="nav-text">sdiff——sdiffCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sdiffstore——sdiffstoreCommand"><span class="nav-number">13.</span> <span class="nav-text">sdiffstore——sdiffstoreCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#smembers——sinterCommand"><span class="nav-number">14.</span> <span class="nav-text">smembers——sinterCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sscan——sscanCommand"><span class="nav-number">15.</span> <span class="nav-text">sscan——sscanCommand</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.miitbeian.gov.cn" rel="noopener" target="_blank">鄂ICP备17006178号-1 </a>&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">269k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">4:05</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a></div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+  
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=6.7.0"></script>
+
+  <script src="/js/src/motion.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=6.7.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=6.7.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=6.7.0"></script>
+<script src="/js/src/post-details.js?v=6.7.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log(`Failed to save Visitor num, with error message: ${responseJSON.error}`);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log(`LeanCloud Counter Error: ${responseJSON.code} ${responseJSON.error}`);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+                'X-LC-Key': '1Qx8FFm1TFsG2XBlkjybkEUG',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <style>
+    .copy-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 20px;
+      color: #333;
+      white-space: nowrap;
+      vertical-align: middle;
+      cursor: pointer;
+      background-color: #eee;
+      background-image: linear-gradient(#fcfcfc, #eee);
+      border: 1px solid #d5d5d5;
+      border-radius: 3px;
+      user-select: none;
+      outline: 0;
+    }
+
+    .highlight-wrap .copy-btn {
+      transition: opacity .3s ease-in-out;
+      opacity: 0;
+      padding: 2px 6px;
+      position: absolute;
+      right: 4px;
+      top: 8px;
+    }
+
+    .highlight-wrap:hover .copy-btn,
+    .highlight-wrap .copy-btn:focus {
+      opacity: 1
+    }
+
+    .highlight-wrap {
+      position: relative;
+    }
+  </style>
+  <script>
+    $('.highlight').each(function (i, e) {
+      var $wrap = $('<div>').addClass('highlight-wrap');
+      $(e).after($wrap);
+      $wrap.append($('<button>').addClass('copy-btn').append('复制').on('click', function (e) {
+        var code = $(this).parent().find('.code').find('.line').map(function (i, e) {
+          return $(e).text();
+        }).toArray().join('\n');
+        var ta = document.createElement('textarea');
+        var range = document.createRange(); //For Chrome
+        var sel = window.getSelection(); //For Chrome
+        var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+        ta.style.top = yPosition + 'px'; //Prevent page scroll
+        ta.style.position = 'absolute';
+        ta.style.opacity = '0';
+        ta.value = code;
+        ta.textContent = code; //For FireFox
+        ta.contentEditable = true;
+        ta.readOnly = false;
+        document.body.appendChild(ta);
+        range.selectNode(ta);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        ta.setSelectionRange(0, code.length);
+        var result = document.execCommand('copy');
+        
+          if (result) $(this).text('复制成功');
+          else $(this).text('复制失败');
+        
+        ta.blur(); //For iOS
+        $(this).blur();
+      })).on('mouseleave', function (e) {
+        var $b = $(this).find('.copy-btn');
+        setTimeout(function () {
+          $b.text('复制');
+        }, 300);
+      }).append(e);
+    })
+  </script>
+
+
+  
+
+</body>
+</html>

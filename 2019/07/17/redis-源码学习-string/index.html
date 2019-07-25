@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+    
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext">
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=6.7.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.7.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.7.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="基础的string相关的命令">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis-源码学习-string">
+<meta property="og:url" content="https://www.svz7.cn/2019/07/17/redis-源码学习-string/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="基础的string相关的命令">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-07-17T16:25:25.251Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="redis-源码学习-string">
+<meta name="twitter:description" content="基础的string相关的命令">
+
+
+
+
+
+
+  <link rel="canonical" href="https://www.svz7.cn/2019/07/17/redis-源码学习-string/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>redis-源码学习-string | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">116</span></a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://www.svz7.cn/2019/07/17/redis-源码学习-string/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">redis-源码学习-string
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-07-17 16:25:53" itemprop="dateCreated datePublished" datetime="2019-07-17T16:25:53+08:00">2019-07-17</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-07-18 00:25:25" itemprop="dateModified" datetime="2019-07-18T00:25:25+08:00">2019-07-18</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+            <span id="/2019/07/17/redis-源码学习-string/" class="leancloud_visitors" data-flag-title="redis-源码学习-string">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读次数：</span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">本文字数：</span>
+                
+                <span title="本文字数">16k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">15 分钟</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>基础的string相关的命令</p>
+<a id="more"></a>
+<h2 id="get——getCommand"><a href="#get——getCommand" class="headerlink" title="get——getCommand"></a>get——getCommand</h2><p>示例： GET KEY_NAME</p>
+<ul>
+<li>返回 key 的值，如果 key 不存在时，返回 nil。 如果 key 不是字符串类型，那么返回一个错误。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">getCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    getGenericCommand(c);</span><br><span class="line">&#125;</span><br><span class="line">  </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getGenericCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *o;</span><br><span class="line">    <span class="comment">// 尝试从数据库中取出键 c-&gt;argv[1] 对应的值对象</span></span><br><span class="line">    <span class="comment">// 如果键不存在时，向客户端发送回复信息，并返回 NULL</span></span><br><span class="line">    <span class="keyword">if</span> ((o = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nullbulk)) == <span class="literal">NULL</span>)</span><br><span class="line">        <span class="keyword">return</span> REDIS_OK;</span><br><span class="line">    <span class="comment">// 值对象存在，检查它的类型</span></span><br><span class="line">    <span class="keyword">if</span> (o-&gt;type != REDIS_STRING) &#123;</span><br><span class="line">        <span class="comment">// 类型错误</span></span><br><span class="line">        addReply(c,shared.wrongtypeerr);</span><br><span class="line">        <span class="keyword">return</span> REDIS_ERR;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 类型正确，向客户端返回对象的值</span></span><br><span class="line">        addReplyBulk(c,o);</span><br><span class="line">        <span class="keyword">return</span> REDIS_OK;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：先判断db的expires字典中查找key并判断是否已过期，如果已过期，则返回空；如果未过期，则继续在db的dict中查找key，找到则返回，若未找到则返回null。</p>
+<h2 id="set——setCommand"><a href="#set——setCommand" class="headerlink" title="set——setCommand"></a>set——setCommand</h2><p>示例： SET key value [NX] [XX] [EX <seconds>] [PX <milliseconds>]</milliseconds></seconds></p>
+<ul>
+<li>EX second ：设置键的过期时间为 second 秒。 SET key value EX second 效果等同于 SETEX key second value 。</li>
+<li>PX millisecond ：设置键的过期时间为 millisecond 毫秒。 SET key value PX millisecond 效果等同于 PSETEX keymillisecond value 。</li>
+<li>NX ：只在键不存在时，才对键进行设置操作。 SET key value NX 效果等同于 SETNX key value 。</li>
+<li>XX ：只在键已经存在时，才对键进行设置操作。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="comment">/* SET key value [NX] [XX] [EX &lt;seconds&gt;] [PX &lt;milliseconds&gt;] */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">    robj *expire = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">int</span> unit = UNIT_SECONDS;</span><br><span class="line">    <span class="keyword">int</span> flags = REDIS_SET_NO_FLAGS;</span><br><span class="line">    <span class="comment">// 设置选项参数</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">3</span>; j &lt; c-&gt;argc; j++) &#123;</span><br><span class="line">        <span class="keyword">char</span> *a = c-&gt;argv[j]-&gt;ptr;</span><br><span class="line">        robj *next = (j == c-&gt;argc<span class="number">-1</span>) ? <span class="literal">NULL</span> : c-&gt;argv[j+<span class="number">1</span>];</span><br><span class="line">        <span class="keyword">if</span> ((a[<span class="number">0</span>] == <span class="string">'n'</span> || a[<span class="number">0</span>] == <span class="string">'N'</span>) &amp;&amp;</span><br><span class="line">            (a[<span class="number">1</span>] == <span class="string">'x'</span> || a[<span class="number">1</span>] == <span class="string">'X'</span>) &amp;&amp; a[<span class="number">2</span>] == <span class="string">'\0'</span>) &#123;</span><br><span class="line">            flags |= REDIS_SET_NX;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((a[<span class="number">0</span>] == <span class="string">'x'</span> || a[<span class="number">0</span>] == <span class="string">'X'</span>) &amp;&amp;</span><br><span class="line">                   (a[<span class="number">1</span>] == <span class="string">'x'</span> || a[<span class="number">1</span>] == <span class="string">'X'</span>) &amp;&amp; a[<span class="number">2</span>] == <span class="string">'\0'</span>) &#123;</span><br><span class="line">            flags |= REDIS_SET_XX;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((a[<span class="number">0</span>] == <span class="string">'e'</span> || a[<span class="number">0</span>] == <span class="string">'E'</span>) &amp;&amp;</span><br><span class="line">                   (a[<span class="number">1</span>] == <span class="string">'x'</span> || a[<span class="number">1</span>] == <span class="string">'X'</span>) &amp;&amp; a[<span class="number">2</span>] == <span class="string">'\0'</span> &amp;&amp; next) &#123;</span><br><span class="line">            unit = UNIT_SECONDS;</span><br><span class="line">            expire = next;</span><br><span class="line">            j++;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((a[<span class="number">0</span>] == <span class="string">'p'</span> || a[<span class="number">0</span>] == <span class="string">'P'</span>) &amp;&amp;</span><br><span class="line">                   (a[<span class="number">1</span>] == <span class="string">'x'</span> || a[<span class="number">1</span>] == <span class="string">'X'</span>) &amp;&amp; a[<span class="number">2</span>] == <span class="string">'\0'</span> &amp;&amp; next) &#123;</span><br><span class="line">            unit = UNIT_MILLISECONDS;</span><br><span class="line">            expire = next;</span><br><span class="line">            j++;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            addReply(c,shared.syntaxerr);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 尝试对值对象进行编码</span></span><br><span class="line">    c-&gt;argv[<span class="number">2</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    setGenericCommand(c,flags,c-&gt;argv[<span class="number">1</span>],c-&gt;argv[<span class="number">2</span>],expire,unit,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setGenericCommand</span><span class="params">(redisClient *c, <span class="keyword">int</span> flags, robj *key, robj *val, robj *expire, <span class="keyword">int</span> unit, robj *ok_reply, robj *abort_reply)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> milliseconds = <span class="number">0</span>; <span class="comment">/* initialized to avoid any harmness warning */</span></span><br><span class="line">    <span class="comment">// 取出过期时间</span></span><br><span class="line">    <span class="keyword">if</span> (expire) &#123;</span><br><span class="line">        <span class="comment">// 取出 expire 参数的值</span></span><br><span class="line">        <span class="comment">// T = O(N)</span></span><br><span class="line">        <span class="keyword">if</span> (getLongLongFromObjectOrReply(c, expire, &amp;milliseconds, <span class="literal">NULL</span>) != REDIS_OK)</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        <span class="comment">// expire 参数的值不正确时报错</span></span><br><span class="line">        <span class="keyword">if</span> (milliseconds &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            addReplyError(c,<span class="string">"invalid expire time in SETEX"</span>);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 不论输入的过期时间是秒还是毫秒</span></span><br><span class="line">        <span class="comment">// Redis 实际都以毫秒的形式保存过期时间</span></span><br><span class="line">        <span class="comment">// 如果输入的过期时间为秒，那么将它转换为毫秒</span></span><br><span class="line">        <span class="keyword">if</span> (unit == UNIT_SECONDS) milliseconds *= <span class="number">1000</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 如果设置了 NX 或者 XX 参数，那么检查条件是否不符合这两个设置</span></span><br><span class="line">    <span class="comment">// 在条件不符合时报错，报错的内容由 abort_reply 参数决定</span></span><br><span class="line">    <span class="keyword">if</span> ((flags &amp; REDIS_SET_NX &amp;&amp; lookupKeyWrite(c-&gt;db,key) != <span class="literal">NULL</span>) ||</span><br><span class="line">        (flags &amp; REDIS_SET_XX &amp;&amp; lookupKeyWrite(c-&gt;db,key) == <span class="literal">NULL</span>))</span><br><span class="line">    &#123;</span><br><span class="line">        addReply(c, abort_reply ? abort_reply : shared.nullbulk);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 将键值关联到数据库</span></span><br><span class="line">    setKey(c-&gt;db,key,val);</span><br><span class="line">    <span class="comment">// 将数据库设为脏</span></span><br><span class="line">    server.dirty++;</span><br><span class="line">    <span class="comment">// 为键设置过期时间</span></span><br><span class="line">    <span class="keyword">if</span> (expire) setExpire(c-&gt;db,key,mstime()+milliseconds);</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_STRING,<span class="string">"set"</span>,key,c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    <span class="keyword">if</span> (expire) notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,</span><br><span class="line">        <span class="string">"expire"</span>,key,c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">// 设置成功，向客户端发送回复</span></span><br><span class="line">    <span class="comment">// 回复的内容由 ok_reply 决定</span></span><br><span class="line">    addReply(c, ok_reply ? ok_reply : shared.ok);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：</p>
+<ol>
+<li>先尝试对value进行编码节省内存（只有编码为RAW或者EMBSTR时尝试编码），EMBSTR 转 INT(字节长度小于21且可以转成整数), RAW  转 EMBSTR（字符串长度小于长度39）</li>
+<li>在dict中，如果没有该key，则添加key，value；否则覆盖，其中覆盖后，需要是否原有value</li>
+<li>如果EX，需要添加到expires字典中；如果是NX，则判断如果已有key，则不进行第二步的dict添加操作操作</li>
+</ol>
+<h2 id="setnx——setnxCommand"><a href="#setnx——setnxCommand" class="headerlink" title="setnx——setnxCommand"></a>setnx——setnxCommand</h2><p>示例：SETNX KEY_NAME VALUE</p>
+<ul>
+<li>返回 key 的值，如果 key 不存在时，返回 nil。 如果 key 不是字符串类型，那么返回一个错误。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setnxCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    c-&gt;argv[<span class="number">2</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    setGenericCommand(c,REDIS_SET_NX,c-&gt;argv[<span class="number">1</span>],c-&gt;argv[<span class="number">2</span>],<span class="literal">NULL</span>,<span class="number">0</span>,shared.cone,shared.czero);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：复用“setGenericCommand”方法，通过flags=REDIS_SET_NX，标识</p>
+<h2 id="setex——setexCommand"><a href="#setex——setexCommand" class="headerlink" title="setex——setexCommand"></a>setex——setexCommand</h2><p>示例：SETEX KEY_NAME TIMEOUT VALUE</p>
+<ul>
+<li>设置成功时返回 OK 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setexCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    c-&gt;argv[<span class="number">3</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">3</span>]);</span><br><span class="line">    setGenericCommand(c,REDIS_SET_NO_FLAGS,c-&gt;argv[<span class="number">1</span>],c-&gt;argv[<span class="number">3</span>],c-&gt;argv[<span class="number">2</span>],UNIT_SECONDS,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：复用“setGenericCommand”方法，通过 expire =UNIT_SECONDS 设置过期时间</p>
+<h2 id="psetex——psetexCommand"><a href="#psetex——psetexCommand" class="headerlink" title="psetex——psetexCommand"></a>psetex——psetexCommand</h2><p>示例：PSETEX key1 EXPIRY_IN_MILLISECONDS value1</p>
+<ul>
+<li>设置成功时返回 OK 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">psetexCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    c-&gt;argv[<span class="number">3</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">3</span>]);</span><br><span class="line">    setGenericCommand(c,REDIS_SET_NO_FLAGS,c-&gt;argv[<span class="number">1</span>],c-&gt;argv[<span class="number">3</span>],c-&gt;argv[<span class="number">2</span>],UNIT_MILLISECONDS,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：复用“setGenericCommand”方法，通过 expire =UNIT_MILLISECONDS 设置过期时间</p>
+<h2 id="append——appendCommand"><a href="#append——appendCommand" class="headerlink" title="append——appendCommand"></a>append——appendCommand</h2><p>示例：APPEND KEY_NAME NEW_VALUE</p>
+<ul>
+<li>追加指定值之后， key 中字符串的长度。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">appendCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">size_t</span> totlen;</span><br><span class="line">    robj *o, *append;</span><br><span class="line">    <span class="comment">// 取出键相应的值对象</span></span><br><span class="line">    o = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="keyword">if</span> (o == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="comment">// 键值对不存在。。。</span></span><br><span class="line">        <span class="comment">/* Create the key */</span></span><br><span class="line">        <span class="comment">// 键值对不存在，创建一个新的</span></span><br><span class="line">        c-&gt;argv[<span class="number">2</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">        dbAdd(c-&gt;db,c-&gt;argv[<span class="number">1</span>],c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">        incrRefCount(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">        totlen = stringObjectLen(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 键值对存在。。。</span></span><br><span class="line">        <span class="comment">/* Key exists, check type */</span></span><br><span class="line">        <span class="comment">// 检查类型</span></span><br><span class="line">        <span class="keyword">if</span> (checkType(c,o,REDIS_STRING))</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        <span class="comment">/* "append" is an argument, so always an sds */</span></span><br><span class="line">        <span class="comment">// 检查追加操作之后，字符串的长度是否符合 Redis 的限制</span></span><br><span class="line">        append = c-&gt;argv[<span class="number">2</span>];</span><br><span class="line">        totlen = stringObjectLen(o)+sdslen(append-&gt;ptr);</span><br><span class="line">        <span class="keyword">if</span> (checkStringLength(c,totlen) != REDIS_OK)</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        <span class="comment">/* Append the value */</span></span><br><span class="line">        <span class="comment">// 执行追加操作</span></span><br><span class="line">        o = dbUnshareStringValue(c-&gt;db,c-&gt;argv[<span class="number">1</span>],o);</span><br><span class="line">        o-&gt;ptr = sdscatlen(o-&gt;ptr,append-&gt;ptr,sdslen(append-&gt;ptr));</span><br><span class="line">        totlen = sdslen(o-&gt;ptr);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 向数据库发送键被修改的信号</span></span><br><span class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_STRING,<span class="string">"append"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">// 将服务器设为脏</span></span><br><span class="line">    server.dirty++;</span><br><span class="line">    <span class="comment">// 发送回复</span></span><br><span class="line">    addReplyLongLong(c,totlen);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：查找dict中的key是否存在，如果不存在，则直接新增key=&gt;value；如果存在，则追加value。</p>
+<h2 id="strlen——strlenCommand"><a href="#strlen——strlenCommand" class="headerlink" title="strlen——strlenCommand"></a>strlen——strlenCommand</h2><p>示例：STRLEN KEY_NAME</p>
+<ul>
+<li>字符串值的长度。 当 key 不存在时，返回 0。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">strlenCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *o;</span><br><span class="line">    <span class="comment">// 取出值对象，并进行类型检查</span></span><br><span class="line">    <span class="keyword">if</span> ((o = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,o,REDIS_STRING)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 返回字符串值的长度</span></span><br><span class="line">    addReplyLongLong(c,stringObjectLen(o));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：查找dict中的key是否存在，如果存在则获取value,计算value的长度</p>
+<h2 id="del——delCommand"><a href="#del——delCommand" class="headerlink" title="del——delCommand"></a>del——delCommand</h2><p>示例：DEL key [key …]</p>
+<ul>
+<li>被删除 key 的数量。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//db.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">delCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> deleted = <span class="number">0</span>, j;</span><br><span class="line">    <span class="comment">// 遍历所有输入键</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">1</span>; j &lt; c-&gt;argc; j++) &#123;</span><br><span class="line">        <span class="comment">// 先删除过期的键</span></span><br><span class="line">        expireIfNeeded(c-&gt;db,c-&gt;argv[j]);</span><br><span class="line">        <span class="comment">// 尝试删除键</span></span><br><span class="line">        <span class="keyword">if</span> (dbDelete(c-&gt;db,c-&gt;argv[j])) &#123;</span><br><span class="line">            <span class="comment">// 删除键成功，发送通知</span></span><br><span class="line">            signalModifiedKey(c-&gt;db,c-&gt;argv[j]);</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,</span><br><span class="line">                <span class="string">"del"</span>,c-&gt;argv[j],c-&gt;db-&gt;id);</span><br><span class="line">            server.dirty++;</span><br><span class="line">            <span class="comment">// 成功删除才增加 deleted 计数器的值</span></span><br><span class="line">            deleted++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 返回被删除键的数量</span></span><br><span class="line">    addReplyLongLong(c,deleted);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：遍历每个要删除的key，先删除expires的过期key，再删除dict中的key</p>
+<h2 id="exists——existsCommand"><a href="#exists——existsCommand" class="headerlink" title="exists——existsCommand"></a>exists——existsCommand</h2><p>示例：EXISTS KEY_NAME</p>
+<ul>
+<li>若 key 存在返回 1 ，否则返回 0 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//db.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">existsCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 检查键是否已经过期，如果已过期的话，那么将它删除</span></span><br><span class="line">    <span class="comment">// 这可以避免已过期的键被误认为存在</span></span><br><span class="line">    expireIfNeeded(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 在数据库中查找</span></span><br><span class="line">    <span class="keyword">if</span> (dbExists(c-&gt;db,c-&gt;argv[<span class="number">1</span>])) &#123;</span><br><span class="line">        addReply(c, shared.cone);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        addReply(c, shared.czero);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：先判断expires是否有该key，如果key已过期，则删除该key；查询dict中是否有该key，如果有则返回1，否认返回0</p>
+<h2 id="incr——incrCommand"><a href="#incr——incrCommand" class="headerlink" title="incr——incrCommand"></a>incr——incrCommand</h2><p>示例：INCR KEY_NAME </p>
+<ul>
+<li>执行 INCR 命令之后 key 的值。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">incrCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    incrDecrCommand(c,<span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">incrDecrCommand</span><span class="params">(redisClient *c, <span class="keyword">long</span> <span class="keyword">long</span> incr)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> value, oldvalue;</span><br><span class="line">    robj *o, *<span class="keyword">new</span>;</span><br><span class="line">    <span class="comment">// 取出值对象</span></span><br><span class="line">    o = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 检查对象是否存在，以及类型是否正确</span></span><br><span class="line">    <span class="keyword">if</span> (o != <span class="literal">NULL</span> &amp;&amp; checkType(c,o,REDIS_STRING)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 取出对象的整数值，并保存到 value 参数中</span></span><br><span class="line">    <span class="keyword">if</span> (getLongLongFromObjectOrReply(c,o,&amp;value,<span class="literal">NULL</span>) != REDIS_OK) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 检查加法操作执行之后值释放会溢出</span></span><br><span class="line">    <span class="comment">// 如果是的话，就向客户端发送一个出错回复，并放弃设置操作</span></span><br><span class="line">    oldvalue = value;</span><br><span class="line">    <span class="keyword">if</span> ((incr &lt; <span class="number">0</span> &amp;&amp; oldvalue &lt; <span class="number">0</span> &amp;&amp; incr &lt; (LLONG_MIN-oldvalue)) ||</span><br><span class="line">        (incr &gt; <span class="number">0</span> &amp;&amp; oldvalue &gt; <span class="number">0</span> &amp;&amp; incr &gt; (LLONG_MAX-oldvalue))) &#123;</span><br><span class="line">        addReplyError(c,<span class="string">"increment or decrement would overflow"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 进行加法计算，并将值保存到新的值对象中</span></span><br><span class="line">    <span class="comment">// 然后用新的值对象替换原来的值对象</span></span><br><span class="line">    value += incr;</span><br><span class="line">    <span class="keyword">new</span> = createStringObjectFromLongLong(value);</span><br><span class="line">    <span class="keyword">if</span> (o)</span><br><span class="line">        dbOverwrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>],<span class="keyword">new</span>);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        dbAdd(c-&gt;db,c-&gt;argv[<span class="number">1</span>],<span class="keyword">new</span>);</span><br><span class="line">    <span class="comment">// 向数据库发送键被修改的信号</span></span><br><span class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_STRING,<span class="string">"incrby"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">// 将服务器设为脏</span></span><br><span class="line">    server.dirty++;</span><br><span class="line">    <span class="comment">// 返回回复</span></span><br><span class="line">    addReply(c,shared.colon);</span><br><span class="line">    addReply(c,<span class="keyword">new</span>);</span><br><span class="line">    addReply(c,shared.crlf);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：如果对象不存在，则初始化为0，获取value后，执行value+1。执行过程符合原子性特点</p>
+<h2 id="decr——delCommand"><a href="#decr——delCommand" class="headerlink" title="decr——delCommand"></a>decr——delCommand</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">示例：DECR KEY_NAME</span><br></pre></td></tr></table></figure>
+<ul>
+<li>执行命令之后 key 的值。 </li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">decrCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    incrDecrCommand(c,<span class="number">-1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：同上一个方法，执行value-1</p>
+<h2 id="incrby——incrbyCommand"><a href="#incrby——incrbyCommand" class="headerlink" title="incrby——incrbyCommand"></a>incrby——incrbyCommand</h2><p>示例：INCRBY KEY_NAME INCR_AMOUNT</p>
+<ul>
+<li>加上指定的增量值之后， key 的值。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">incrbyCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> incr;</span><br><span class="line">    <span class="keyword">if</span> (getLongLongFromObjectOrReply(c, c-&gt;argv[<span class="number">2</span>], &amp;incr, <span class="literal">NULL</span>) != REDIS_OK) <span class="keyword">return</span>;</span><br><span class="line">    incrDecrCommand(c,incr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：同上面的方法，value + incr</p>
+<h2 id="decrby——decrbyCommand"><a href="#decrby——decrbyCommand" class="headerlink" title="decrby——decrbyCommand"></a>decrby——decrbyCommand</h2><p>示例：DECRBY KEY_NAME DECREMENT_AMOUNT</p>
+<ul>
+<li>减去指定减量值之后， key 的值。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">decrbyCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> incr;</span><br><span class="line">    <span class="keyword">if</span> (getLongLongFromObjectOrReply(c, c-&gt;argv[<span class="number">2</span>], &amp;incr, <span class="literal">NULL</span>) != REDIS_OK) <span class="keyword">return</span>;</span><br><span class="line">    incrDecrCommand(c,-incr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：同上面的方法，value - incr</p>
+<h2 id="incrbyfloat——incrbyfloatCommand"><a href="#incrbyfloat——incrbyfloatCommand" class="headerlink" title="incrbyfloat——incrbyfloatCommand"></a>incrbyfloat——incrbyfloatCommand</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">示例：INCRBYFLOAT KEY_NAME INCR_AMOUNT</span><br></pre></td></tr></table></figure>
+<ul>
+<li>执行命令之后 key 的值。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">incrbyfloatCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">double</span> incr, value;</span><br><span class="line">    robj *o, *<span class="keyword">new</span>, *aux;</span><br><span class="line">    <span class="comment">// 取出值对象</span></span><br><span class="line">    o = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 检查对象是否存在，以及类型是否正确</span></span><br><span class="line">    <span class="keyword">if</span> (o != <span class="literal">NULL</span> &amp;&amp; checkType(c,o,REDIS_STRING)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 将对象的整数值保存到 value 参数中</span></span><br><span class="line">    <span class="comment">// 并取出 incr 参数的值</span></span><br><span class="line">    <span class="keyword">if</span> (getLongDoubleFromObjectOrReply(c,o,&amp;value,<span class="literal">NULL</span>) != REDIS_OK ||</span><br><span class="line">        getLongDoubleFromObjectOrReply(c,c-&gt;argv[<span class="number">2</span>],&amp;incr,<span class="literal">NULL</span>) != REDIS_OK)</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 进行加法计算，并检查是否溢出</span></span><br><span class="line">    value += incr;</span><br><span class="line">    <span class="keyword">if</span> (isnan(value) || isinf(value)) &#123;</span><br><span class="line">        addReplyError(c,<span class="string">"increment would produce NaN or Infinity"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 用一个包含新值的新对象替换现有的值对象</span></span><br><span class="line">    <span class="keyword">new</span> = createStringObjectFromLongDouble(value);</span><br><span class="line">    <span class="keyword">if</span> (o)</span><br><span class="line">        dbOverwrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>],<span class="keyword">new</span>);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        dbAdd(c-&gt;db,c-&gt;argv[<span class="number">1</span>],<span class="keyword">new</span>);</span><br><span class="line">    <span class="comment">// 向数据库发送键被修改的信号</span></span><br><span class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_STRING,<span class="string">"incrbyfloat"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">// 将服务器设为脏</span></span><br><span class="line">    server.dirty++;</span><br><span class="line">    <span class="comment">// 回复</span></span><br><span class="line">    addReplyBulk(c,<span class="keyword">new</span>);</span><br><span class="line">    <span class="comment">/* Always replicate INCRBYFLOAT as a SET command with the final value</span></span><br><span class="line"><span class="comment">     * in order to make sure that differences in float precision or formatting</span></span><br><span class="line"><span class="comment">     * will not create differences in replicas or after an AOF restart. */</span></span><br><span class="line">    <span class="comment">// 在传播 INCRBYFLOAT 命令时，总是用 SET 命令来替换 INCRBYFLOAT 命令</span></span><br><span class="line">    <span class="comment">// 从而防止因为不同的浮点精度和格式化造成 AOF 重启时的数据不一致</span></span><br><span class="line">    aux = createStringObject(<span class="string">"SET"</span>,<span class="number">3</span>);</span><br><span class="line">    rewriteClientCommandArgument(c,<span class="number">0</span>,aux);</span><br><span class="line">    decrRefCount(aux);</span><br><span class="line">    rewriteClientCommandArgument(c,<span class="number">2</span>,<span class="keyword">new</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：同上类似，int改成float</p>
+<h2 id="mget——mgetCommand"><a href="#mget——mgetCommand" class="headerlink" title="mget——mgetCommand"></a>mget——mgetCommand</h2><p>示例：MGET KEY1 KEY2 .. KEYN</p>
+<ul>
+<li>一个包含所有给定 key 的值的列表。 </li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">mgetCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">    addReplyMultiBulkLen(c,c-&gt;argc<span class="number">-1</span>);</span><br><span class="line">    <span class="comment">// 查找并返回所有输入键的值</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">1</span>; j &lt; c-&gt;argc; j++) &#123;</span><br><span class="line">        <span class="comment">// 查找键 c-&gt;argc[j] 的值</span></span><br><span class="line">        robj *o = lookupKeyRead(c-&gt;db,c-&gt;argv[j]);</span><br><span class="line">        <span class="keyword">if</span> (o == <span class="literal">NULL</span>) &#123;</span><br><span class="line">            <span class="comment">// 值不存在，向客户端发送空回复</span></span><br><span class="line">            addReply(c,shared.nullbulk);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (o-&gt;type != REDIS_STRING) &#123;</span><br><span class="line">                <span class="comment">// 值存在，但不是字符串类型</span></span><br><span class="line">                addReply(c,shared.nullbulk);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 值存在，并且是字符串</span></span><br><span class="line">                addReplyBulk(c,o);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：从dict中查找，如果存在则返回；如果没有则返回空。这里没有调用过期函数。 </p>
+<h2 id="getset——getsetCommand"><a href="#getset——getsetCommand" class="headerlink" title="getset——getsetCommand"></a>getset——getsetCommand</h2><p>示例：GETSET KEY_NAME VALUE</p>
+<ul>
+<li><p>返回给定 key 的旧值。 当 key 没有旧值时，即 key 不存在时，返回 nil 。</p>
+<p>  当 key 存在但不是字符串类型时，返回一个错误。</p>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">getsetCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 取出并返回键的值对象</span></span><br><span class="line">    <span class="keyword">if</span> (getGenericCommand(c) == REDIS_ERR) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 编码键的新值 c-&gt;argv[2]</span></span><br><span class="line">    c-&gt;argv[<span class="number">2</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    <span class="comment">// 将数据库中关联键 c-&gt;argv[1] 和新值对象 c-&gt;argv[2]</span></span><br><span class="line">    setKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>],c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    <span class="comment">// 发送事件通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_STRING,<span class="string">"set"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">// 将服务器设为脏</span></span><br><span class="line">    server.dirty++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 说明：结合了get和set方法，无法解决并发计数问题</p>
+<h2 id="mset——msetCommand"><a href="#mset——msetCommand" class="headerlink" title="mset——msetCommand"></a>mset——msetCommand</h2><p>示例：MSET key1 value1 key2 value2 .. keyN valueN </p>
+<ul>
+<li>总是返回 OK 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">msetCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    msetGenericCommand(c,<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">msetGenericCommand</span><span class="params">(redisClient *c, <span class="keyword">int</span> nx)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> j, busykeys = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 键值参数不是成相成对出现的，格式不正确</span></span><br><span class="line">    <span class="keyword">if</span> ((c-&gt;argc % <span class="number">2</span>) == <span class="number">0</span>) &#123;</span><br><span class="line">        addReplyError(c,<span class="string">"wrong number of arguments for MSET"</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Handle the NX flag. The MSETNX semantic is to return zero and don't</span></span><br><span class="line"><span class="comment">     * set nothing at all if at least one already key exists. */</span></span><br><span class="line">    <span class="comment">// 如果 nx 参数为真，那么检查所有输入键在数据库中是否存在</span></span><br><span class="line">    <span class="comment">// 只要有一个键是存在的，那么就向客户端发送空回复</span></span><br><span class="line">    <span class="comment">// 并放弃执行接下来的设置操作</span></span><br><span class="line">    <span class="keyword">if</span> (nx) &#123;</span><br><span class="line">        <span class="keyword">for</span> (j = <span class="number">1</span>; j &lt; c-&gt;argc; j += <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (lookupKeyWrite(c-&gt;db,c-&gt;argv[j]) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">                busykeys++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 键存在</span></span><br><span class="line">        <span class="comment">// 发送空白回复，并放弃执行接下来的设置操作</span></span><br><span class="line">        <span class="keyword">if</span> (busykeys) &#123;</span><br><span class="line">            addReply(c, shared.czero);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 设置所有键值对</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">1</span>; j &lt; c-&gt;argc; j += <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="comment">// 对值对象进行解码</span></span><br><span class="line">        c-&gt;argv[j+<span class="number">1</span>] = tryObjectEncoding(c-&gt;argv[j+<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 将键值对关联到数据库</span></span><br><span class="line">        <span class="comment">// c-&gt;argc[j] 为键</span></span><br><span class="line">        <span class="comment">// c-&gt;argc[j+1] 为值</span></span><br><span class="line">        setKey(c-&gt;db,c-&gt;argv[j],c-&gt;argv[j+<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_STRING,<span class="string">"set"</span>,c-&gt;argv[j],c-&gt;db-&gt;id);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 将服务器设为脏</span></span><br><span class="line">    server.dirty += (c-&gt;argc<span class="number">-1</span>)/<span class="number">2</span>;</span><br><span class="line">    <span class="comment">// 设置成功</span></span><br><span class="line">    <span class="comment">// MSET 返回 OK ，而 MSETNX 返回 1</span></span><br><span class="line">    addReply(c, nx ? shared.cone : shared.ok);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 说明：结合多个set方法</p>
+<h2 id="msetnx——msetnxCommand"><a href="#msetnx——msetnxCommand" class="headerlink" title="msetnx——msetnxCommand"></a>msetnx——msetnxCommand</h2><p>示例：MSETNX key1 value1 key2 value2 .. keyN valueN </p>
+<ul>
+<li>当所有 key 都成功设置，返回 1 。 如果所有给定 key 都设置失败(至少有一个 key 已经存在)，那么返回 0 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//t_string.c</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">msetnxCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    msetGenericCommand(c,<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：同上</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>作用</th>
+<th>int编码时间复杂度</th>
+<th>embstr编码时间复杂度</th>
+<th>raw编码实现时间复杂度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SET</td>
+<td>设置给定 key 的值</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td>获取给定 key 的值</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>APPEND</td>
+<td>将值附加到key原有的string后面</td>
+<td>O(n),n为被添加string的长度</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>INCRBYFLOAT</td>
+<td>为 key 中所储存的值加上指定的浮点数增量值</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>INCRBY</td>
+<td>为 key 所储存的值加上指定值</td>
+<td>O(1)</td>
+<td>ERROR (不允许这种操作）</td>
+<td>ERROR</td>
+</tr>
+<tr>
+<td>DECRBY</td>
+<td>为 key 所储存的值减去指定额值</td>
+<td>O(1)</td>
+<td>ERROR</td>
+<td>ERROR</td>
+</tr>
+<tr>
+<td>STRLEN</td>
+<td>计算字符串的长度</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>SETRANGE</td>
+<td>用value参数覆写给定key所储存的字符串值，从偏移量offset开始</td>
+<td>O(n)</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>GETRANGE</td>
+<td>获取存储在指定 key 中字符串的子字符串</td>
+<td>O(n),<code>N</code> 为要返回的字符串的长度</td>
+<td>O(n)</td>
+<td>O(n)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/17/redis-源码学习-基础数据类型/" rel="next" title="redis-源码学习-基础数据类型">
+                <i class="fa fa-chevron-left"></i> redis-源码学习-基础数据类型
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/17/redis-源码学习-list/" rel="prev" title="redis-源码学习-list">
+                redis-源码学习-list <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="SVz">
+            
+              <p class="site-author-name" itemprop="name">SVz</p>
+              <p class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">116</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/Algothrim/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">29</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/SVz777" title="GitHub &rarr; https://github.com/SVz777" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:903943711@qq.com" title="E-Mail &rarr; mailto:903943711@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#get——getCommand"><span class="nav-number">1.</span> <span class="nav-text">get——getCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#set——setCommand"><span class="nav-number">2.</span> <span class="nav-text">set——setCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#setnx——setnxCommand"><span class="nav-number">3.</span> <span class="nav-text">setnx——setnxCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#setex——setexCommand"><span class="nav-number">4.</span> <span class="nav-text">setex——setexCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#psetex——psetexCommand"><span class="nav-number">5.</span> <span class="nav-text">psetex——psetexCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#append——appendCommand"><span class="nav-number">6.</span> <span class="nav-text">append——appendCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#strlen——strlenCommand"><span class="nav-number">7.</span> <span class="nav-text">strlen——strlenCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#del——delCommand"><span class="nav-number">8.</span> <span class="nav-text">del——delCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#exists——existsCommand"><span class="nav-number">9.</span> <span class="nav-text">exists——existsCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#incr——incrCommand"><span class="nav-number">10.</span> <span class="nav-text">incr——incrCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#decr——delCommand"><span class="nav-number">11.</span> <span class="nav-text">decr——delCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#incrby——incrbyCommand"><span class="nav-number">12.</span> <span class="nav-text">incrby——incrbyCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#decrby——decrbyCommand"><span class="nav-number">13.</span> <span class="nav-text">decrby——decrbyCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#incrbyfloat——incrbyfloatCommand"><span class="nav-number">14.</span> <span class="nav-text">incrbyfloat——incrbyfloatCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mget——mgetCommand"><span class="nav-number">15.</span> <span class="nav-text">mget——mgetCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#getset——getsetCommand"><span class="nav-number">16.</span> <span class="nav-text">getset——getsetCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mset——msetCommand"><span class="nav-number">17.</span> <span class="nav-text">mset——msetCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#msetnx——msetnxCommand"><span class="nav-number">18.</span> <span class="nav-text">msetnx——msetnxCommand</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.miitbeian.gov.cn" rel="noopener" target="_blank">鄂ICP备17006178号-1 </a>&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">269k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">4:05</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a></div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+  
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=6.7.0"></script>
+
+  <script src="/js/src/motion.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=6.7.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=6.7.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=6.7.0"></script>
+<script src="/js/src/post-details.js?v=6.7.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log(`Failed to save Visitor num, with error message: ${responseJSON.error}`);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log(`LeanCloud Counter Error: ${responseJSON.code} ${responseJSON.error}`);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+                'X-LC-Key': '1Qx8FFm1TFsG2XBlkjybkEUG',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <style>
+    .copy-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 20px;
+      color: #333;
+      white-space: nowrap;
+      vertical-align: middle;
+      cursor: pointer;
+      background-color: #eee;
+      background-image: linear-gradient(#fcfcfc, #eee);
+      border: 1px solid #d5d5d5;
+      border-radius: 3px;
+      user-select: none;
+      outline: 0;
+    }
+
+    .highlight-wrap .copy-btn {
+      transition: opacity .3s ease-in-out;
+      opacity: 0;
+      padding: 2px 6px;
+      position: absolute;
+      right: 4px;
+      top: 8px;
+    }
+
+    .highlight-wrap:hover .copy-btn,
+    .highlight-wrap .copy-btn:focus {
+      opacity: 1
+    }
+
+    .highlight-wrap {
+      position: relative;
+    }
+  </style>
+  <script>
+    $('.highlight').each(function (i, e) {
+      var $wrap = $('<div>').addClass('highlight-wrap');
+      $(e).after($wrap);
+      $wrap.append($('<button>').addClass('copy-btn').append('复制').on('click', function (e) {
+        var code = $(this).parent().find('.code').find('.line').map(function (i, e) {
+          return $(e).text();
+        }).toArray().join('\n');
+        var ta = document.createElement('textarea');
+        var range = document.createRange(); //For Chrome
+        var sel = window.getSelection(); //For Chrome
+        var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+        ta.style.top = yPosition + 'px'; //Prevent page scroll
+        ta.style.position = 'absolute';
+        ta.style.opacity = '0';
+        ta.value = code;
+        ta.textContent = code; //For FireFox
+        ta.contentEditable = true;
+        ta.readOnly = false;
+        document.body.appendChild(ta);
+        range.selectNode(ta);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        ta.setSelectionRange(0, code.length);
+        var result = document.execCommand('copy');
+        
+          if (result) $(this).text('复制成功');
+          else $(this).text('复制失败');
+        
+        ta.blur(); //For iOS
+        $(this).blur();
+      })).on('mouseleave', function (e) {
+        var $b = $(this).find('.copy-btn');
+        setTimeout(function () {
+          $b.text('复制');
+        }, 300);
+      }).append(e);
+    })
+  </script>
+
+
+  
+
+</body>
+</html>

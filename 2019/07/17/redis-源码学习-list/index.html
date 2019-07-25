@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+    
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext">
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=6.7.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico?v=6.7.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.7.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '6.7.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":true,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="基础的list相关的命令,t_list.c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis-源码学习-list">
+<meta property="og:url" content="https://www.svz7.cn/2019/07/17/redis-源码学习-list/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="基础的list相关的命令,t_list.c">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-07-17T16:25:25.250Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="redis-源码学习-list">
+<meta name="twitter:description" content="基础的list相关的命令,t_list.c">
+
+
+
+
+
+
+  <link rel="canonical" href="https://www.svz7.cn/2019/07/17/redis-源码学习-list/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>redis-源码学习-list | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档<span class="badge">116</span></a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://www.svz7.cn/2019/07/17/redis-源码学习-list/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/favicon.ico">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">redis-源码学习-list
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-07-17 16:34:48" itemprop="dateCreated datePublished" datetime="2019-07-17T16:34:48+08:00">2019-07-17</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-07-18 00:25:25" itemprop="dateModified" datetime="2019-07-18T00:25:25+08:00">2019-07-18</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+            <span id="/2019/07/17/redis-源码学习-list/" class="leancloud_visitors" data-flag-title="redis-源码学习-list">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读次数：</span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+            <div class="post-symbolscount">
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">本文字数：</span>
+                
+                <span title="本文字数">28k</span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">25 分钟</span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>基础的list相关的命令,<code>t_list.c</code></p>
+<a id="more"></a>
+<h2 id="rpush——rpushCommand"><a href="#rpush——rpushCommand" class="headerlink" title="rpush——rpushCommand"></a>rpush——rpushCommand</h2><p>示例：RPUSH KEY_NAME VALUE1..VALUEN</p>
+<ul>
+<li>执行 RPUSH 操作后，列表的长度。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rpushCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    pushGenericCommand(c,REDIS_TAIL);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">pushGenericCommand</span><span class="params">(redisClient *c, <span class="keyword">int</span> where)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> j, waiting = <span class="number">0</span>, pushed = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 取出列表对象</span></span><br><span class="line">    robj *lobj = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 如果列表对象不存在，那么可能有客户端在等待这个键的出现</span></span><br><span class="line">    <span class="keyword">int</span> may_have_waiting_clients = (lobj == <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">if</span> (lobj &amp;&amp; lobj-&gt;type != REDIS_LIST) &#123;</span><br><span class="line">        addReply(c,shared.wrongtypeerr);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 将列表状态设置为就绪</span></span><br><span class="line">    <span class="keyword">if</span> (may_have_waiting_clients) signalListAsReady(c,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 遍历所有输入值，并将它们添加到列表中</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">2</span>; j &lt; c-&gt;argc; j++) &#123;</span><br><span class="line">        <span class="comment">// 编码值</span></span><br><span class="line">        c-&gt;argv[j] = tryObjectEncoding(c-&gt;argv[j]);</span><br><span class="line">        <span class="comment">// 如果列表对象不存在，那么创建一个，并关联到数据库</span></span><br><span class="line">        <span class="keyword">if</span> (!lobj) &#123;</span><br><span class="line">            lobj = createZiplistObject();</span><br><span class="line">            dbAdd(c-&gt;db,c-&gt;argv[<span class="number">1</span>],lobj);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 将值推入到列表</span></span><br><span class="line">        listTypePush(lobj,c-&gt;argv[j],where);</span><br><span class="line">        pushed++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 返回添加的节点数量</span></span><br><span class="line">    addReplyLongLong(c, waiting + (lobj ? listTypeLength(lobj) : <span class="number">0</span>));</span><br><span class="line">    <span class="comment">// 如果至少有一个元素被成功推入，那么执行以下代码</span></span><br><span class="line">    <span class="keyword">if</span> (pushed) &#123;</span><br><span class="line">        <span class="keyword">char</span> *event = (where == REDIS_HEAD) ? <span class="string">"lpush"</span> : <span class="string">"rpush"</span>;</span><br><span class="line">        <span class="comment">// 发送键修改信号</span></span><br><span class="line">        signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 发送事件通知</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_LIST,event,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    &#125;</span><br><span class="line">    server.dirty += pushed;</span><br><span class="line">&#125;</span><br><span class="line">  </span><br><span class="line"><span class="comment">/* The function pushes an element to the specified list object 'subject',</span></span><br><span class="line"><span class="comment"> * at head or tail position as specified by 'where'.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 将给定元素添加到列表的表头或表尾。</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 参数 where 决定了新元素添加的位置：</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *  - REDIS_HEAD 将新元素添加到表头</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> *  - REDIS_TAIL 将新元素添加到表尾</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * There is no need for the caller to increment the refcount of 'value' as</span></span><br><span class="line"><span class="comment"> * the function takes care of it if needed.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 调用者无须担心 value 的引用计数，因为这个函数会负责这方面的工作。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">listTypePush</span><span class="params">(robj *subject, robj *value, <span class="keyword">int</span> where)</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* Check if we need to convert the ziplist */</span></span><br><span class="line">    <span class="comment">// 是否需要转换编码？</span></span><br><span class="line">    listTypeTryConversion(subject,value);</span><br><span class="line">    <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_ZIPLIST &amp;&amp;</span><br><span class="line">        ziplistLen(subject-&gt;ptr) &gt;= server.list_max_ziplist_entries)</span><br><span class="line">            listTypeConvert(subject,REDIS_ENCODING_LINKEDLIST);</span><br><span class="line">    <span class="comment">// ZIPLIST</span></span><br><span class="line">    <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_ZIPLIST) &#123;</span><br><span class="line">        <span class="keyword">int</span> pos = (where == REDIS_HEAD) ? ZIPLIST_HEAD : ZIPLIST_TAIL;</span><br><span class="line">        <span class="comment">// 取出对象的值，因为 ZIPLIST 只能保存字符串或整数</span></span><br><span class="line">        value = getDecodedObject(value);</span><br><span class="line">        subject-&gt;ptr = ziplistPush(subject-&gt;ptr,value-&gt;ptr,sdslen(value-&gt;ptr),pos);</span><br><span class="line">        decrRefCount(value);</span><br><span class="line">    <span class="comment">// 双端链表</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_LINKEDLIST) &#123;</span><br><span class="line">        <span class="keyword">if</span> (where == REDIS_HEAD) &#123;</span><br><span class="line">            listAddNodeHead(subject-&gt;ptr,value);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            listAddNodeTail(subject-&gt;ptr,value);</span><br><span class="line">        &#125;</span><br><span class="line">        incrRefCount(value);</span><br><span class="line">    <span class="comment">// 未知编码</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown list encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：需要判断是压缩列表还是双端链表，并且根据value值，判断是否需要从压缩列表转换到双端列表；并根据插入列头还是列尾选用不同的方式。</p>
+<p>复杂度：压缩列表O(N), 最坏O(N2) 连锁更新; 双端列表：O(1)</p>
+<h2 id="lpush——lpushCommand"><a href="#lpush——lpushCommand" class="headerlink" title="lpush——lpushCommand"></a>lpush——lpushCommand</h2><p>示例: LPUSH KEY_NAME VALUE1.. VALUEN</p>
+<ul>
+<li>执行 LPUSH 命令后，列表的长度。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lpushCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    pushGenericCommand(c,REDIS_HEAD);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明\复杂度： 同rpushCommand</p>
+<h2 id="rpushx——rpushxCommand"><a href="#rpushx——rpushxCommand" class="headerlink" title="rpushx——rpushxCommand"></a>rpushx——rpushxCommand</h2><p>示例：RPUSHX KEY_NAME VALUE1..VALUEN </p>
+<ul>
+<li>执行 Rpushx 操作后，列表的长度。如果列表不存在，则操作无效</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rpushxCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    c-&gt;argv[<span class="number">2</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    pushxGenericCommand(c,<span class="literal">NULL</span>,c-&gt;argv[<span class="number">2</span>],REDIS_TAIL);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明\复杂度： 同rpushCommand</p>
+<h2 id="lpushx——lpushxCommand"><a href="#lpushx——lpushxCommand" class="headerlink" title="lpushx——lpushxCommand"></a>lpushx——lpushxCommand</h2><p>示例：LPUSHX KEY_NAME VALUE1.. VALUEN</p>
+<ul>
+<li>LPUSHX 命令执行之后，列表的长度。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lpushxCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    c-&gt;argv[<span class="number">2</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">    pushxGenericCommand(c,<span class="literal">NULL</span>,c-&gt;argv[<span class="number">2</span>],REDIS_HEAD);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明\复杂度： 同rpushCommand</p>
+<h2 id="linsert——linsertCommand"><a href="#linsert——linsertCommand" class="headerlink" title="linsert——linsertCommand"></a>linsert——linsertCommand</h2><p>示例：LINSERT key BEFORE|AFTER pivot value</p>
+<ul>
+<li>如果命令执行成功，返回插入操作完成之后，列表的长度。 如果没有找到指定元素 ，返回 -1 。 如果 key 不存在或为空列表，返回 0 </li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">linsertCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 编码 refval 对象</span></span><br><span class="line">    c-&gt;argv[<span class="number">4</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">4</span>]);</span><br><span class="line">    <span class="keyword">if</span> (strcasecmp(c-&gt;argv[<span class="number">2</span>]-&gt;ptr,<span class="string">"after"</span>) == <span class="number">0</span>) &#123;</span><br><span class="line">        pushxGenericCommand(c,c-&gt;argv[<span class="number">3</span>],c-&gt;argv[<span class="number">4</span>],REDIS_TAIL);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (strcasecmp(c-&gt;argv[<span class="number">2</span>]-&gt;ptr,<span class="string">"before"</span>) == <span class="number">0</span>) &#123;</span><br><span class="line">        pushxGenericCommand(c,c-&gt;argv[<span class="number">3</span>],c-&gt;argv[<span class="number">4</span>],REDIS_HEAD);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        addReply(c,shared.syntaxerr);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">  </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">pushxGenericCommand</span><span class="params">(redisClient *c, robj *refval, robj *val, <span class="keyword">int</span> where)</span> </span>&#123;</span><br><span class="line">    robj *subject;</span><br><span class="line">    listTypeIterator *iter;</span><br><span class="line">    listTypeEntry entry;</span><br><span class="line">    <span class="keyword">int</span> inserted = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 取出列表对象</span></span><br><span class="line">    <span class="keyword">if</span> ((subject = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,subject,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 执行的是 LINSERT 命令</span></span><br><span class="line">    <span class="keyword">if</span> (refval != <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="comment">/* We're not sure if this value can be inserted yet, but we cannot</span></span><br><span class="line"><span class="comment">         * convert the list inside the iterator. We don't want to loop over</span></span><br><span class="line"><span class="comment">         * the list twice (once to see if the value can be inserted and once</span></span><br><span class="line"><span class="comment">         * to do the actual insert), so we assume this value can be inserted</span></span><br><span class="line"><span class="comment">         * and convert the ziplist to a regular list if necessary. */</span></span><br><span class="line">        <span class="comment">// 看保存值 value 是否需要将列表编码转换为双端链表</span></span><br><span class="line">        listTypeTryConversion(subject,val);</span><br><span class="line">        <span class="comment">/* Seek refval from head to tail */</span></span><br><span class="line">        <span class="comment">// 在列表中查找 refval 对象</span></span><br><span class="line">        iter = listTypeInitIterator(subject,<span class="number">0</span>,REDIS_TAIL);</span><br><span class="line">        <span class="keyword">while</span> (listTypeNext(iter,&amp;entry)) &#123;</span><br><span class="line">            <span class="keyword">if</span> (listTypeEqual(&amp;entry,refval)) &#123;</span><br><span class="line">                <span class="comment">// 找到了，将值插入到节点的前面或后面</span></span><br><span class="line">                listTypeInsert(&amp;entry,val,where);</span><br><span class="line">                inserted = <span class="number">1</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        listTypeReleaseIterator(iter);</span><br><span class="line">        <span class="keyword">if</span> (inserted) &#123;</span><br><span class="line">            <span class="comment">/* Check if the length exceeds the ziplist length threshold. */</span></span><br><span class="line">            <span class="comment">// 查看插入之后是否需要将编码转换为双端链表</span></span><br><span class="line">            <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_ZIPLIST &amp;&amp;</span><br><span class="line">                ziplistLen(subject-&gt;ptr) &gt; server.list_max_ziplist_entries)</span><br><span class="line">                    listTypeConvert(subject,REDIS_ENCODING_LINKEDLIST);</span><br><span class="line">            signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_LIST,<span class="string">"linsert"</span>,</span><br><span class="line">                                c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">            server.dirty++;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* Notify client of a failed insert */</span></span><br><span class="line">            <span class="comment">// refval 不存在，插入失败</span></span><br><span class="line">            addReply(c,shared.cnegone);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// 执行的是 LPUSHX 或 RPUSHX 命令</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">char</span> *event = (where == REDIS_HEAD) ? <span class="string">"lpush"</span> : <span class="string">"rpush"</span>;</span><br><span class="line">        listTypePush(subject,val,where);</span><br><span class="line">        signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_LIST,event,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">        server.dirty++;</span><br><span class="line">    &#125;</span><br><span class="line">    addReplyLongLong(c,listTypeLength(subject));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：列表中插入新节点，双向列表很容易插入；压缩列表可能引起连锁更新</p>
+<p>复杂度：压缩列表O(N), 最坏O(N2) 连锁更新; 双端列表：O(1)</p>
+<h2 id="rpop——rpopCommand"><a href="#rpop——rpopCommand" class="headerlink" title="rpop——rpopCommand"></a>rpop——rpopCommand</h2><p>示例：RPOP KEY_NAME </p>
+<ul>
+<li>列表的最后一个元素。 当列表不存在时，返回 nil 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rpopCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    popGenericCommand(c,REDIS_TAIL);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 说明：列表中删除新节点，双向列表很容易删除；压缩列表可能引起连锁更新</p>
+<p>复杂度：压缩列表O(N), 最坏O(N2) 连锁更新; 双端列表：O(1)</p>
+<h2 id="lpop——lpopCommand"><a href="#lpop——lpopCommand" class="headerlink" title="lpop——lpopCommand"></a>lpop——lpopCommand</h2><p>示例：Lpop KEY_NAME </p>
+<ul>
+<li>列表的第一个元素。 当列表 key 不存在时，返回 nil 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lpopCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    popGenericCommand(c,REDIS_HEAD);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">popGenericCommand</span><span class="params">(redisClient *c, <span class="keyword">int</span> where)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 取出列表对象</span></span><br><span class="line">    robj *o = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nullbulk);</span><br><span class="line">    <span class="keyword">if</span> (o == <span class="literal">NULL</span> || checkType(c,o,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 弹出列表元素</span></span><br><span class="line">    robj *value = listTypePop(o,where);</span><br><span class="line">    <span class="comment">// 根据弹出元素是否为空，决定后续动作</span></span><br><span class="line">    <span class="keyword">if</span> (value == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        addReply(c,shared.nullbulk);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">char</span> *event = (where == REDIS_HEAD) ? <span class="string">"lpop"</span> : <span class="string">"rpop"</span>;</span><br><span class="line">        addReplyBulk(c,value);</span><br><span class="line">        decrRefCount(value);</span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_LIST,event,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">        <span class="keyword">if</span> (listTypeLength(o) == <span class="number">0</span>) &#123;</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,</span><br><span class="line">                                c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">            dbDelete(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">        signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        server.dirty++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：列表中删除新节点，双向列表很容易删除；压缩列表可能引起连锁更新</p>
+<p>复杂度：压缩列表O(N), 最坏O(N2) 连锁更新; 双端列表：O(1)</p>
+<h2 id="brpop——brpopCommand"><a href="#brpop——brpopCommand" class="headerlink" title="brpop——brpopCommand"></a>brpop——brpopCommand</h2><p>示例：BRPOP LIST1 LIST2 .. LISTN TIMEOUT </p>
+<ul>
+<li>假如在指定时间内没有任何元素被弹出，则返回一个 nil 和等待时长。 反之，返回一个含有两个元素的列表，第一个元素是被弹出元素所属的 key ，第二个元素是被弹出元素的值。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">brpopCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    blockingPopGenericCommand(c,REDIS_TAIL);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"><span class="comment">/* Blocking RPOP/LPOP */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">blockingPopGenericCommand</span><span class="params">(redisClient *c, <span class="keyword">int</span> where)</span> </span>&#123;</span><br><span class="line">    robj *o;</span><br><span class="line">    <span class="keyword">mstime_t</span> timeout;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">    <span class="comment">// 取出 timeout 参数</span></span><br><span class="line">    <span class="keyword">if</span> (getTimeoutFromObjectOrReply(c,c-&gt;argv[c-&gt;argc<span class="number">-1</span>],&amp;timeout,UNIT_SECONDS)</span><br><span class="line">        != REDIS_OK) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 遍历所有列表键</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">1</span>; j &lt; c-&gt;argc<span class="number">-1</span>; j++) &#123;</span><br><span class="line">        <span class="comment">// 取出列表键</span></span><br><span class="line">        o = lookupKeyWrite(c-&gt;db,c-&gt;argv[j]);</span><br><span class="line">        <span class="comment">// 有非空列表？</span></span><br><span class="line">        <span class="keyword">if</span> (o != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (o-&gt;type != REDIS_LIST) &#123;</span><br><span class="line">                addReply(c,shared.wrongtypeerr);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 非空列表</span></span><br><span class="line">                <span class="keyword">if</span> (listTypeLength(o) != <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="comment">/* Non empty list, this is like a non normal [LR]POP. */</span></span><br><span class="line">                    <span class="keyword">char</span> *event = (where == REDIS_HEAD) ? <span class="string">"lpop"</span> : <span class="string">"rpop"</span>;</span><br><span class="line">                    <span class="comment">// 弹出值</span></span><br><span class="line">                    robj *value = listTypePop(o,where);</span><br><span class="line">                    redisAssert(value != <span class="literal">NULL</span>);</span><br><span class="line">                    <span class="comment">// 回复客户端</span></span><br><span class="line">                    addReplyMultiBulkLen(c,<span class="number">2</span>);</span><br><span class="line">                    <span class="comment">// 回复弹出元素的列表</span></span><br><span class="line">                    addReplyBulk(c,c-&gt;argv[j]);</span><br><span class="line">                    <span class="comment">// 回复弹出值</span></span><br><span class="line">                    addReplyBulk(c,value);</span><br><span class="line">                    decrRefCount(value);</span><br><span class="line">                    notifyKeyspaceEvent(REDIS_NOTIFY_LIST,event,</span><br><span class="line">                                        c-&gt;argv[j],c-&gt;db-&gt;id);</span><br><span class="line">                    <span class="comment">// 删除空列表</span></span><br><span class="line">                    <span class="keyword">if</span> (listTypeLength(o) == <span class="number">0</span>) &#123;</span><br><span class="line">                        dbDelete(c-&gt;db,c-&gt;argv[j]);</span><br><span class="line">                        notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,</span><br><span class="line">                                            c-&gt;argv[j],c-&gt;db-&gt;id);</span><br><span class="line">                    &#125;</span><br><span class="line">                    signalModifiedKey(c-&gt;db,c-&gt;argv[j]);</span><br><span class="line">                    server.dirty++;</span><br><span class="line">                    <span class="comment">/* Replicate it as an [LR]POP instead of B[LR]POP. */</span></span><br><span class="line">                    <span class="comment">// 传播一个 [LR]POP 而不是 B[LR]POP</span></span><br><span class="line">                    rewriteClientCommandVector(c,<span class="number">2</span>,</span><br><span class="line">                        (where == REDIS_HEAD) ? shared.lpop : shared.rpop,</span><br><span class="line">                        c-&gt;argv[j]);</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* If we are inside a MULTI/EXEC and the list is empty the only thing</span></span><br><span class="line"><span class="comment">     * we can do is treating it as a timeout (even with timeout 0). */</span></span><br><span class="line">    <span class="comment">// 如果命令在一个事务中执行，那么为了不产生死等待</span></span><br><span class="line">    <span class="comment">// 服务器只能向客户端发送一个空回复</span></span><br><span class="line">    <span class="keyword">if</span> (c-&gt;flags &amp; REDIS_MULTI) &#123;</span><br><span class="line">        addReply(c,shared.nullmultibulk);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* If the list is empty or the key does not exists we must block */</span></span><br><span class="line">    <span class="comment">// 所有输入列表键都不存在，只能阻塞了</span></span><br><span class="line">    blockForKeys(c, c-&gt;argv + <span class="number">1</span>, c-&gt;argc - <span class="number">2</span>, timeout, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">blockForKeys</span><span class="params">(redisClient *c, robj **keys, <span class="keyword">int</span> numkeys, <span class="keyword">mstime_t</span> timeout, robj *target)</span> </span>&#123;</span><br><span class="line">    dictEntry *de;</span><br><span class="line">    <span class="built_in">list</span> *l;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">    <span class="comment">// 设置阻塞状态的超时和目标选项</span></span><br><span class="line">    c-&gt;bpop.timeout = timeout;</span><br><span class="line">    <span class="comment">// target 在执行 RPOPLPUSH 命令时使用</span></span><br><span class="line">    c-&gt;bpop.target = target;</span><br><span class="line">    <span class="keyword">if</span> (target != <span class="literal">NULL</span>) incrRefCount(target);</span><br><span class="line">    <span class="comment">// 关联阻塞客户端和键的相关信息</span></span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; numkeys; j++) &#123;</span><br><span class="line">        <span class="comment">/* If the key already exists in the dict ignore it. */</span></span><br><span class="line">        <span class="comment">// c-&gt;bpop.keys 是一个集合（值为 NULL 的字典）</span></span><br><span class="line">        <span class="comment">// 它记录所有造成客户端阻塞的键</span></span><br><span class="line">        <span class="comment">// 以下语句在键不存在于集合的时候，将它添加到集合</span></span><br><span class="line">        <span class="keyword">if</span> (dictAdd(c-&gt;bpop.keys,keys[j],<span class="literal">NULL</span>) != DICT_OK) <span class="keyword">continue</span>;</span><br><span class="line">        incrRefCount(keys[j]);</span><br><span class="line">        <span class="comment">/* And in the other "side", to map keys -&gt; clients */</span></span><br><span class="line">        <span class="comment">// c-&gt;db-&gt;blocking_keys 字典的键为造成客户端阻塞的键</span></span><br><span class="line">        <span class="comment">// 而值则是一个链表，链表中包含了所有被阻塞的客户端</span></span><br><span class="line">        <span class="comment">// 以下程序将阻塞键和被阻塞客户端关联起来</span></span><br><span class="line">        de = dictFind(c-&gt;db-&gt;blocking_keys,keys[j]);</span><br><span class="line">        <span class="keyword">if</span> (de == <span class="literal">NULL</span>) &#123;</span><br><span class="line">            <span class="comment">// 链表不存在，新创建一个，并将它关联到字典中</span></span><br><span class="line">            <span class="keyword">int</span> retval;</span><br><span class="line">            <span class="comment">/* For every key we take a list of clients blocked for it */</span></span><br><span class="line">            l = listCreate();</span><br><span class="line">            retval = dictAdd(c-&gt;db-&gt;blocking_keys,keys[j],l);</span><br><span class="line">            incrRefCount(keys[j]);</span><br><span class="line">            redisAssertWithInfo(c,keys[j],retval == DICT_OK);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            l = dictGetVal(de);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 将客户端填接到被阻塞客户端的链表中</span></span><br><span class="line">        listAddNodeTail(l,c);</span><br><span class="line">    &#125;</span><br><span class="line">    blockClient(c,REDIS_BLOCKED_LIST);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：如果多个列表中，任意有一个有value，则直接返回value，删除列表中的value；</p>
+<p>都无value，则直接阻塞，会在db-&gt;blocking_keys 的dict中记录对应的客户端，如key是LIST1，value是列表，列表中记录阻塞的客户端</p>
+<p>其中，timeout是必传项，如果最后一个不是整数，会报错</p>
+<p>复杂度：压缩列表O(N), 最坏O(N2) 连锁更新; 双端列表：O(1)</p>
+<h2 id="brpoplpush——brpoplpushCommand"><a href="#brpoplpush——brpoplpushCommand" class="headerlink" title="brpoplpush——brpoplpushCommand"></a>brpoplpush——brpoplpushCommand</h2><p>示例：BRPOPLPUSH LIST1 ANOTHER_LIST TIMEOUT </p>
+<ul>
+<li>假如在指定时间内没有任何元素被弹出，则返回一个 nil 和等待时长。 反之，返回一个含有两个元素的列表，第一个元素是被弹出元素所属的 key ，第二个元素是被弹出元素的值。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">brpoplpushCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">mstime_t</span> timeout;</span><br><span class="line">    <span class="comment">// 取出 timeout 参数</span></span><br><span class="line">    <span class="keyword">if</span> (getTimeoutFromObjectOrReply(c,c-&gt;argv[<span class="number">3</span>],&amp;timeout,UNIT_SECONDS)</span><br><span class="line">        != REDIS_OK) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 取出列表键</span></span><br><span class="line">    robj *key = lookupKeyWrite(c-&gt;db, c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="comment">// 键为空，阻塞</span></span><br><span class="line">    <span class="keyword">if</span> (key == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (c-&gt;flags &amp; REDIS_MULTI) &#123;</span><br><span class="line">            <span class="comment">/* Blocking against an empty list in a multi state</span></span><br><span class="line"><span class="comment">             * returns immediately. */</span></span><br><span class="line">            addReply(c, shared.nullbulk);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* The list is empty and the client blocks. */</span></span><br><span class="line">            blockForKeys(c, c-&gt;argv + <span class="number">1</span>, <span class="number">1</span>, timeout, c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// 键非空，执行 RPOPLPUSH</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (key-&gt;type != REDIS_LIST) &#123;</span><br><span class="line">            addReply(c, shared.wrongtypeerr);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* The list exists and has elements, so</span></span><br><span class="line"><span class="comment">             * the regular rpoplpushCommand is executed. */</span></span><br><span class="line">            redisAssertWithInfo(c,key,listTypeLength(key) &gt; <span class="number">0</span>);</span><br><span class="line">            rpoplpushCommand(c);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：pop和push的命令组合</p>
+<h2 id="blpop——blpopCommand"><a href="#blpop——blpopCommand" class="headerlink" title="blpop——blpopCommand"></a>blpop——blpopCommand</h2><p>示例：BLPOP LIST1 LIST2 .. LISTN TIMEOUT</p>
+<ul>
+<li>如果列表为空，返回一个 nil 。 否则，返回一个含有两个元素的列表，第一个元素是被弹出元素所属的 key ，第二个元素是被弹出元素的值。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">blpopCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    blockingPopGenericCommand(c,REDIS_HEAD);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：同brpopCommand</p>
+<h2 id="llen——llenCommand"><a href="#llen——llenCommand" class="headerlink" title="llen——llenCommand"></a>llen——llenCommand</h2><p>示例：LLEN KEY_NAME </p>
+<ul>
+<li>列表的长度。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">llenCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *o = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero);</span><br><span class="line">    <span class="keyword">if</span> (o == <span class="literal">NULL</span> || checkType(c,o,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    addReplyLongLong(c,listTypeLength(o));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：获取列表长度</p>
+<p>复杂度：O(1)</p>
+<h2 id="lindex——lindexCommand"><a href="#lindex——lindexCommand" class="headerlink" title="lindex——lindexCommand"></a>lindex——lindexCommand</h2><p>示例:LINDEX KEY_NAME INDEX_POSITION </p>
+<ul>
+<li>列表中下标为指定索引值的元素。 如果指定索引值不在列表的区间范围内，返回 nil 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lindexCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *o = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nullbulk);</span><br><span class="line">    <span class="keyword">if</span> (o == <span class="literal">NULL</span> || checkType(c,o,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">long</span> index;</span><br><span class="line">    robj *value = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="comment">// 取出整数值对象 index</span></span><br><span class="line">    <span class="keyword">if</span> ((getLongFromObjectOrReply(c, c-&gt;argv[<span class="number">2</span>], &amp;index, <span class="literal">NULL</span>) != REDIS_OK))</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 根据索引，遍历 ziplist ，直到指定位置</span></span><br><span class="line">    <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_ZIPLIST) &#123;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">char</span> *p;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">char</span> *vstr;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> vlen;</span><br><span class="line">        <span class="keyword">long</span> <span class="keyword">long</span> vlong;</span><br><span class="line">        p = ziplistIndex(o-&gt;ptr,index);</span><br><span class="line">        <span class="keyword">if</span> (ziplistGet(p,&amp;vstr,&amp;vlen,&amp;vlong)) &#123;</span><br><span class="line">            <span class="keyword">if</span> (vstr) &#123;</span><br><span class="line">                value = createStringObject((<span class="keyword">char</span>*)vstr,vlen);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                value = createStringObjectFromLongLong(vlong);</span><br><span class="line">            &#125;</span><br><span class="line">            addReplyBulk(c,value);</span><br><span class="line">            decrRefCount(value);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            addReply(c,shared.nullbulk);</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// 根据索引，遍历双端链表，直到指定位置</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_LINKEDLIST) &#123;</span><br><span class="line">        listNode *ln = listIndex(o-&gt;ptr,index);</span><br><span class="line">        <span class="keyword">if</span> (ln != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            value = listNodeValue(ln);</span><br><span class="line">            addReplyBulk(c,value);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            addReply(c,shared.nullbulk);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown list encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：获取index节点的value</p>
+<p>复杂度: O(N)</p>
+<h2 id="lset——lsetCommand"><a href="#lset——lsetCommand" class="headerlink" title="lset——lsetCommand"></a>lset——lsetCommand</h2><p>示例：LSET KEY_NAME INDEX VALUE</p>
+<ul>
+<li>操作成功返回 ok ，否则返回错误信息。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lsetCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 取出列表对象</span></span><br><span class="line">    robj *o = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nokeyerr);</span><br><span class="line">    <span class="keyword">if</span> (o == <span class="literal">NULL</span> || checkType(c,o,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">long</span> index;</span><br><span class="line">    <span class="comment">// 取出值对象 value</span></span><br><span class="line">    robj *value = (c-&gt;argv[<span class="number">3</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">3</span>]));</span><br><span class="line">    <span class="comment">// 取出整数值对象 index</span></span><br><span class="line">    <span class="keyword">if</span> ((getLongFromObjectOrReply(c, c-&gt;argv[<span class="number">2</span>], &amp;index, <span class="literal">NULL</span>) != REDIS_OK))</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 查看保存 value 值是否需要转换列表的底层编码</span></span><br><span class="line">    listTypeTryConversion(o,value);</span><br><span class="line">    <span class="comment">// 设置到 ziplist</span></span><br><span class="line">    <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_ZIPLIST) &#123;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">char</span> *p, *zl = o-&gt;ptr;</span><br><span class="line">        <span class="comment">// 查找索引</span></span><br><span class="line">        p = ziplistIndex(zl,index);</span><br><span class="line">        <span class="keyword">if</span> (p == <span class="literal">NULL</span>) &#123;</span><br><span class="line">            addReply(c,shared.outofrangeerr);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 删除现有的值</span></span><br><span class="line">            o-&gt;ptr = ziplistDelete(o-&gt;ptr,&amp;p);</span><br><span class="line">            <span class="comment">// 插入新值到指定索引</span></span><br><span class="line">            value = getDecodedObject(value);</span><br><span class="line">            o-&gt;ptr = ziplistInsert(o-&gt;ptr,p,value-&gt;ptr,sdslen(value-&gt;ptr));</span><br><span class="line">            decrRefCount(value);</span><br><span class="line">            addReply(c,shared.ok);</span><br><span class="line">            signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_LIST,<span class="string">"lset"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">            server.dirty++;</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="comment">// 设置到双端链表</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_LINKEDLIST) &#123;</span><br><span class="line">        listNode *ln = listIndex(o-&gt;ptr,index);</span><br><span class="line">        <span class="keyword">if</span> (ln == <span class="literal">NULL</span>) &#123;</span><br><span class="line">            addReply(c,shared.outofrangeerr);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 删除旧值对象</span></span><br><span class="line">            decrRefCount((robj*)listNodeValue(ln));</span><br><span class="line">            <span class="comment">// 指向新对象</span></span><br><span class="line">            listNodeValue(ln) = value;</span><br><span class="line">            incrRefCount(value);</span><br><span class="line">            addReply(c,shared.ok);</span><br><span class="line">            signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_LIST,<span class="string">"lset"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">            server.dirty++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown list encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：在index节点的插入key，value</p>
+<p>复杂度：压缩列表O(N), 最坏O(N2) 连锁更新; 双端列表：O(1)，只要涉及到列表的新增，删除，修改，压缩列表最坏情况都是O(N2)；所以在复杂度上压缩列表整体更好，只是在内存占用上有优势，性能和内存折中的结果。</p>
+<h2 id="lrange——lrangeCommand"><a href="#lrange——lrangeCommand" class="headerlink" title="lrange——lrangeCommand"></a>lrange——lrangeCommand</h2><p>示例：LRANGE KEY_NAME START END</p>
+<ul>
+<li>一个列表，包含指定区间内的元素。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lrangeCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *o;</span><br><span class="line">    <span class="keyword">long</span> start, end, llen, rangelen;</span><br><span class="line">    <span class="comment">// 取出索引值 start 和 end</span></span><br><span class="line">    <span class="keyword">if</span> ((getLongFromObjectOrReply(c, c-&gt;argv[<span class="number">2</span>], &amp;start, <span class="literal">NULL</span>) != REDIS_OK) ||</span><br><span class="line">        (getLongFromObjectOrReply(c, c-&gt;argv[<span class="number">3</span>], &amp;end, <span class="literal">NULL</span>) != REDIS_OK)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 取出列表对象</span></span><br><span class="line">    <span class="keyword">if</span> ((o = lookupKeyReadOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.emptymultibulk)) == <span class="literal">NULL</span></span><br><span class="line">         || checkType(c,o,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 取出列表长度</span></span><br><span class="line">    llen = listTypeLength(o);</span><br><span class="line">    <span class="comment">/* convert negative indexes */</span></span><br><span class="line">    <span class="comment">// 将负数索引转换成正数索引</span></span><br><span class="line">    <span class="keyword">if</span> (start &lt; <span class="number">0</span>) start = llen+start;</span><br><span class="line">    <span class="keyword">if</span> (end &lt; <span class="number">0</span>) end = llen+end;</span><br><span class="line">    <span class="keyword">if</span> (start &lt; <span class="number">0</span>) start = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* Invariant: start &gt;= 0, so this test will be true when end &lt; 0.</span></span><br><span class="line"><span class="comment">     * The range is empty when start &gt; end or start &gt;= length. */</span></span><br><span class="line">    <span class="keyword">if</span> (start &gt; end || start &gt;= llen) &#123;</span><br><span class="line">        addReply(c,shared.emptymultibulk);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (end &gt;= llen) end = llen<span class="number">-1</span>;</span><br><span class="line">    rangelen = (end-start)+<span class="number">1</span>;</span><br><span class="line">    <span class="comment">/* Return the result in form of a multi-bulk reply */</span></span><br><span class="line">    addReplyMultiBulkLen(c,rangelen);</span><br><span class="line">    <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_ZIPLIST) &#123;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">char</span> *p = ziplistIndex(o-&gt;ptr,start);</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">char</span> *vstr;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> vlen;</span><br><span class="line">        <span class="keyword">long</span> <span class="keyword">long</span> vlong;</span><br><span class="line">        <span class="comment">// 遍历 ziplist ，并将指定索引上的值添加到回复中</span></span><br><span class="line">        <span class="keyword">while</span>(rangelen--) &#123;</span><br><span class="line">            ziplistGet(p,&amp;vstr,&amp;vlen,&amp;vlong);</span><br><span class="line">            <span class="keyword">if</span> (vstr) &#123;</span><br><span class="line">                addReplyBulkCBuffer(c,vstr,vlen);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                addReplyBulkLongLong(c,vlong);</span><br><span class="line">            &#125;</span><br><span class="line">            p = ziplistNext(o-&gt;ptr,p);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_LINKEDLIST) &#123;</span><br><span class="line">        listNode *ln;</span><br><span class="line">        <span class="comment">/* If we are nearest to the end of the list, reach the element</span></span><br><span class="line"><span class="comment">         * starting from tail and going backward, as it is faster. */</span></span><br><span class="line">        <span class="keyword">if</span> (start &gt; llen/<span class="number">2</span>) start -= llen;</span><br><span class="line">        ln = listIndex(o-&gt;ptr,start);</span><br><span class="line">        <span class="comment">// 遍历双端链表，将指定索引上的值添加到回复</span></span><br><span class="line">        <span class="keyword">while</span>(rangelen--) &#123;</span><br><span class="line">            addReplyBulk(c,ln-&gt;value);</span><br><span class="line">            ln = ln-&gt;next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"List encoding is not LINKEDLIST nor ZIPLIST!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="ltrim——ltrimCommand"><a href="#ltrim——ltrimCommand" class="headerlink" title="ltrim——ltrimCommand"></a>ltrim——ltrimCommand</h2><p>示例：LTRIM KEY_NAME START STOP</p>
+<ul>
+<li>命令执行成功时，返回 ok 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ltrimCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *o;</span><br><span class="line">    <span class="keyword">long</span> start, end, llen, j, ltrim, rtrim;</span><br><span class="line">    <span class="built_in">list</span> *<span class="built_in">list</span>;</span><br><span class="line">    listNode *ln;</span><br><span class="line">    <span class="comment">// 取出索引值 start 和 end</span></span><br><span class="line">    <span class="keyword">if</span> ((getLongFromObjectOrReply(c, c-&gt;argv[<span class="number">2</span>], &amp;start, <span class="literal">NULL</span>) != REDIS_OK) ||</span><br><span class="line">        (getLongFromObjectOrReply(c, c-&gt;argv[<span class="number">3</span>], &amp;end, <span class="literal">NULL</span>) != REDIS_OK)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 取出列表对象</span></span><br><span class="line">    <span class="keyword">if</span> ((o = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.ok)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,o,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 列表长度</span></span><br><span class="line">    llen = listTypeLength(o);</span><br><span class="line">    <span class="comment">/* convert negative indexes */</span></span><br><span class="line">    <span class="comment">// 将负数索引转换成正数索引</span></span><br><span class="line">    <span class="keyword">if</span> (start &lt; <span class="number">0</span>) start = llen+start;</span><br><span class="line">    <span class="keyword">if</span> (end &lt; <span class="number">0</span>) end = llen+end;</span><br><span class="line">    <span class="keyword">if</span> (start &lt; <span class="number">0</span>) start = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* Invariant: start &gt;= 0, so this test will be true when end &lt; 0.</span></span><br><span class="line"><span class="comment">     * The range is empty when start &gt; end or start &gt;= length. */</span></span><br><span class="line">    <span class="keyword">if</span> (start &gt; end || start &gt;= llen) &#123;</span><br><span class="line">        <span class="comment">/* Out of range start or start &gt; end result in empty list */</span></span><br><span class="line">        ltrim = llen;</span><br><span class="line">        rtrim = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (end &gt;= llen) end = llen<span class="number">-1</span>;</span><br><span class="line">        ltrim = start;</span><br><span class="line">        rtrim = llen-end<span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Remove list elements to perform the trim */</span></span><br><span class="line">    <span class="comment">// 删除指定列表两端的元素</span></span><br><span class="line">    <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_ZIPLIST) &#123;</span><br><span class="line">        <span class="comment">// 删除左端元素</span></span><br><span class="line">        o-&gt;ptr = ziplistDeleteRange(o-&gt;ptr,<span class="number">0</span>,ltrim);</span><br><span class="line">        <span class="comment">// 删除右端元素</span></span><br><span class="line">        o-&gt;ptr = ziplistDeleteRange(o-&gt;ptr,-rtrim,rtrim);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (o-&gt;encoding == REDIS_ENCODING_LINKEDLIST) &#123;</span><br><span class="line">        <span class="built_in">list</span> = o-&gt;ptr;</span><br><span class="line">        <span class="comment">// 删除左端元素</span></span><br><span class="line">        <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; ltrim; j++) &#123;</span><br><span class="line">            ln = listFirst(<span class="built_in">list</span>);</span><br><span class="line">            listDelNode(<span class="built_in">list</span>,ln);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 删除右端元素</span></span><br><span class="line">        <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; rtrim; j++) &#123;</span><br><span class="line">            ln = listLast(<span class="built_in">list</span>);</span><br><span class="line">            listDelNode(<span class="built_in">list</span>,ln);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        redisPanic(<span class="string">"Unknown list encoding"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 发送通知</span></span><br><span class="line">    notifyKeyspaceEvent(REDIS_NOTIFY_LIST,<span class="string">"ltrim"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    <span class="comment">// 如果列表已经为空，那么删除它</span></span><br><span class="line">    <span class="keyword">if</span> (listTypeLength(o) == <span class="number">0</span>) &#123;</span><br><span class="line">        dbDelete(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,c-&gt;argv[<span class="number">1</span>],c-&gt;db-&gt;id);</span><br><span class="line">    &#125;</span><br><span class="line">    signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    server.dirty++;</span><br><span class="line">    addReply(c,shared.ok);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：删除某一端的一段数据</p>
+<h2 id="lrem——lremCommand"><a href="#lrem——lremCommand" class="headerlink" title="lrem——lremCommand"></a>lrem——lremCommand</h2><p>示例：LREM KEY_NAME COUNT VALUE</p>
+<ul>
+<li>被移除元素的数量。 列表不存在时返回 0 。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lremCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *subject, *obj;</span><br><span class="line">    <span class="comment">// 编码目标对象 elem</span></span><br><span class="line">    obj = c-&gt;argv[<span class="number">3</span>] = tryObjectEncoding(c-&gt;argv[<span class="number">3</span>]);</span><br><span class="line">    <span class="keyword">long</span> toremove;</span><br><span class="line">    <span class="keyword">long</span> removed = <span class="number">0</span>;</span><br><span class="line">    listTypeEntry entry;</span><br><span class="line">    <span class="comment">// 取出指定删除模式的 count 参数</span></span><br><span class="line">    <span class="keyword">if</span> ((getLongFromObjectOrReply(c, c-&gt;argv[<span class="number">2</span>], &amp;toremove, <span class="literal">NULL</span>) != REDIS_OK))</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 取出列表对象</span></span><br><span class="line">    subject = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.czero);</span><br><span class="line">    <span class="keyword">if</span> (subject == <span class="literal">NULL</span> || checkType(c,subject,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">/* Make sure obj is raw when we're dealing with a ziplist */</span></span><br><span class="line">    <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_ZIPLIST)</span><br><span class="line">        obj = getDecodedObject(obj);</span><br><span class="line">    listTypeIterator *li;</span><br><span class="line">    <span class="comment">// 根据 toremove 参数，决定是从表头还是表尾开始进行删除</span></span><br><span class="line">    <span class="keyword">if</span> (toremove &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        toremove = -toremove;</span><br><span class="line">        li = listTypeInitIterator(subject,<span class="number">-1</span>,REDIS_HEAD);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        li = listTypeInitIterator(subject,<span class="number">0</span>,REDIS_TAIL);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 查找，比对对象，并进行删除</span></span><br><span class="line">    <span class="keyword">while</span> (listTypeNext(li,&amp;entry)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (listTypeEqual(&amp;entry,obj)) &#123;</span><br><span class="line">            listTypeDelete(&amp;entry);</span><br><span class="line">            server.dirty++;</span><br><span class="line">            removed++;</span><br><span class="line">            <span class="comment">// 已经满足删除数量，停止</span></span><br><span class="line">            <span class="keyword">if</span> (toremove &amp;&amp; removed == toremove) <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    listTypeReleaseIterator(li);</span><br><span class="line">    <span class="comment">/* Clean up raw encoded object */</span></span><br><span class="line">    <span class="keyword">if</span> (subject-&gt;encoding == REDIS_ENCODING_ZIPLIST)</span><br><span class="line">        decrRefCount(obj);</span><br><span class="line">    <span class="comment">// 删除空列表</span></span><br><span class="line">    <span class="keyword">if</span> (listTypeLength(subject) == <span class="number">0</span>) dbDelete(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">    addReplyLongLong(c,removed);</span><br><span class="line">    <span class="keyword">if</span> (removed) signalModifiedKey(c-&gt;db,c-&gt;argv[<span class="number">1</span>]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="rpoplpush——rpoplpushCommand"><a href="#rpoplpush——rpoplpushCommand" class="headerlink" title="rpoplpush——rpoplpushCommand"></a>rpoplpush——rpoplpushCommand</h2><p>示例：RPOPLPUSH SOURCE_KEY_NAME DESTINATION_KEY_NAME</p>
+<ul>
+<li>被弹出的元素。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rpoplpushCommand</span><span class="params">(redisClient *c)</span> </span>&#123;</span><br><span class="line">    robj *sobj, *value;</span><br><span class="line">     </span><br><span class="line">    <span class="comment">// 来源列表</span></span><br><span class="line">    <span class="keyword">if</span> ((sobj = lookupKeyWriteOrReply(c,c-&gt;argv[<span class="number">1</span>],shared.nullbulk)) == <span class="literal">NULL</span> ||</span><br><span class="line">        checkType(c,sobj,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="comment">// 空列表，没有元素可 pop ，直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (listTypeLength(sobj) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">/* This may only happen after loading very old RDB files. Recent</span></span><br><span class="line"><span class="comment">         * versions of Redis delete keys of empty lists. */</span></span><br><span class="line">        addReply(c,shared.nullbulk);</span><br><span class="line">    <span class="comment">// 源列表非空</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 目标对象</span></span><br><span class="line">        robj *dobj = lookupKeyWrite(c-&gt;db,c-&gt;argv[<span class="number">2</span>]);</span><br><span class="line">        robj *touchedkey = c-&gt;argv[<span class="number">1</span>];</span><br><span class="line">        <span class="comment">// 检查目标对象是否列表</span></span><br><span class="line">        <span class="keyword">if</span> (dobj &amp;&amp; checkType(c,dobj,REDIS_LIST)) <span class="keyword">return</span>;</span><br><span class="line">        <span class="comment">// 从源列表中弹出值</span></span><br><span class="line">        value = listTypePop(sobj,REDIS_TAIL);</span><br><span class="line">        <span class="comment">/* We saved touched key, and protect it, since rpoplpushHandlePush</span></span><br><span class="line"><span class="comment">         * may change the client command argument vector (it does not</span></span><br><span class="line"><span class="comment">         * currently). */</span></span><br><span class="line">        incrRefCount(touchedkey);</span><br><span class="line">        <span class="comment">// 将值推入目标列表中，如果目标列表不存在，那么创建一个新列表</span></span><br><span class="line">        rpoplpushHandlePush(c,c-&gt;argv[<span class="number">2</span>],dobj,value);</span><br><span class="line">        <span class="comment">/* listTypePop returns an object with its refcount incremented */</span></span><br><span class="line">        decrRefCount(value);</span><br><span class="line">        <span class="comment">/* Delete the source list when it is empty */</span></span><br><span class="line">        notifyKeyspaceEvent(REDIS_NOTIFY_LIST,<span class="string">"rpop"</span>,touchedkey,c-&gt;db-&gt;id);</span><br><span class="line">        <span class="comment">// 如果源列表已经为空，那么将它删除</span></span><br><span class="line">        <span class="keyword">if</span> (listTypeLength(sobj) == <span class="number">0</span>) &#123;</span><br><span class="line">            dbDelete(c-&gt;db,touchedkey);</span><br><span class="line">            notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,<span class="string">"del"</span>,</span><br><span class="line">                                touchedkey,c-&gt;db-&gt;id);</span><br><span class="line">        &#125;</span><br><span class="line">        signalModifiedKey(c-&gt;db,touchedkey);</span><br><span class="line">        decrRefCount(touchedkey);</span><br><span class="line">        server.dirty++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>作用</th>
+<th>ziplist编码时间复杂度</th>
+<th>linkedlist编码时间复杂度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LPUSH</td>
+<td>将所有指定的值插入到存于 key 的列表的头部</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>RPUSH</td>
+<td>将所有指定的值插入到存于 key 的列表的尾部</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>LPOP</td>
+<td>移除并返回列表 key 的头元素</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>RPOP</td>
+<td>移除并返回列表 key 的尾元素</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>LINDEX</td>
+<td>返回列表 key 中，下标为 index 的元素</td>
+<td>O(n)</td>
+<td>O(n)，N为链表长度</td>
+</tr>
+<tr>
+<td>LLEN</td>
+<td>返回列表 key 的长度</td>
+<td>O(1)</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>LINSERT</td>
+<td>向列表 key 中指定的元素前或者后插入元素</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>LREM</td>
+<td>移除列表 key 中\</td>
+<td>count\</td>
+<td>个与参数value相等的值</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>LTRIM</td>
+<td>保留列表 key 中指定区间的值，其他的全部移除</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>LSET</td>
+<td>将列表 key 中指定下标的值设置为value</td>
+<td>平均O(n), 最坏O(N2)</td>
+<td>O(n)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/17/redis-源码学习-string/" rel="next" title="redis-源码学习-string">
+                <i class="fa fa-chevron-left"></i> redis-源码学习-string
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/17/redis-源码学习-hash/" rel="prev" title="redis-源码学习-hash">
+                redis-源码学习-hash <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/favicon.ico" alt="SVz">
+            
+              <p class="site-author-name" itemprop="name">SVz</p>
+              <p class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">116</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/Algothrim/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">29</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/SVz777" title="GitHub &rarr; https://github.com/SVz777" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:903943711@qq.com" title="E-Mail &rarr; mailto:903943711@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#rpush——rpushCommand"><span class="nav-number">1.</span> <span class="nav-text">rpush——rpushCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lpush——lpushCommand"><span class="nav-number">2.</span> <span class="nav-text">lpush——lpushCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rpushx——rpushxCommand"><span class="nav-number">3.</span> <span class="nav-text">rpushx——rpushxCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lpushx——lpushxCommand"><span class="nav-number">4.</span> <span class="nav-text">lpushx——lpushxCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linsert——linsertCommand"><span class="nav-number">5.</span> <span class="nav-text">linsert——linsertCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rpop——rpopCommand"><span class="nav-number">6.</span> <span class="nav-text">rpop——rpopCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lpop——lpopCommand"><span class="nav-number">7.</span> <span class="nav-text">lpop——lpopCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#brpop——brpopCommand"><span class="nav-number">8.</span> <span class="nav-text">brpop——brpopCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#brpoplpush——brpoplpushCommand"><span class="nav-number">9.</span> <span class="nav-text">brpoplpush——brpoplpushCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#blpop——blpopCommand"><span class="nav-number">10.</span> <span class="nav-text">blpop——blpopCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#llen——llenCommand"><span class="nav-number">11.</span> <span class="nav-text">llen——llenCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lindex——lindexCommand"><span class="nav-number">12.</span> <span class="nav-text">lindex——lindexCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lset——lsetCommand"><span class="nav-number">13.</span> <span class="nav-text">lset——lsetCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lrange——lrangeCommand"><span class="nav-number">14.</span> <span class="nav-text">lrange——lrangeCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ltrim——ltrimCommand"><span class="nav-number">15.</span> <span class="nav-text">ltrim——ltrimCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lrem——lremCommand"><span class="nav-number">16.</span> <span class="nav-text">lrem——lremCommand</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rpoplpush——rpoplpushCommand"><span class="nav-number">17.</span> <span class="nav-text">rpoplpush——rpoplpushCommand</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.miitbeian.gov.cn" rel="noopener" target="_blank">鄂ICP备17006178号-1 </a>&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">269k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">4:05</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a></div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="site-uv" title="总访客量">
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+  
+
+  
+    <span class="post-meta-item-icon">
+      <i class="fa fa-eye"></i>
+    </span>
+    <span class="site-pv" title="总访问量">
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=6.7.0"></script>
+
+  <script src="/js/src/motion.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=6.7.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=6.7.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=6.7.0"></script>
+<script src="/js/src/post-details.js?v=6.7.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=6.7.0"></script>
+
+
+
+  
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log(`Failed to save Visitor num, with error message: ${responseJSON.error}`);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log(`LeanCloud Counter Error: ${responseJSON.code} ${responseJSON.error}`);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+                'X-LC-Key': '1Qx8FFm1TFsG2XBlkjybkEUG',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <style>
+    .copy-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 20px;
+      color: #333;
+      white-space: nowrap;
+      vertical-align: middle;
+      cursor: pointer;
+      background-color: #eee;
+      background-image: linear-gradient(#fcfcfc, #eee);
+      border: 1px solid #d5d5d5;
+      border-radius: 3px;
+      user-select: none;
+      outline: 0;
+    }
+
+    .highlight-wrap .copy-btn {
+      transition: opacity .3s ease-in-out;
+      opacity: 0;
+      padding: 2px 6px;
+      position: absolute;
+      right: 4px;
+      top: 8px;
+    }
+
+    .highlight-wrap:hover .copy-btn,
+    .highlight-wrap .copy-btn:focus {
+      opacity: 1
+    }
+
+    .highlight-wrap {
+      position: relative;
+    }
+  </style>
+  <script>
+    $('.highlight').each(function (i, e) {
+      var $wrap = $('<div>').addClass('highlight-wrap');
+      $(e).after($wrap);
+      $wrap.append($('<button>').addClass('copy-btn').append('复制').on('click', function (e) {
+        var code = $(this).parent().find('.code').find('.line').map(function (i, e) {
+          return $(e).text();
+        }).toArray().join('\n');
+        var ta = document.createElement('textarea');
+        var range = document.createRange(); //For Chrome
+        var sel = window.getSelection(); //For Chrome
+        var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+        ta.style.top = yPosition + 'px'; //Prevent page scroll
+        ta.style.position = 'absolute';
+        ta.style.opacity = '0';
+        ta.value = code;
+        ta.textContent = code; //For FireFox
+        ta.contentEditable = true;
+        ta.readOnly = false;
+        document.body.appendChild(ta);
+        range.selectNode(ta);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        ta.setSelectionRange(0, code.length);
+        var result = document.execCommand('copy');
+        
+          if (result) $(this).text('复制成功');
+          else $(this).text('复制失败');
+        
+        ta.blur(); //For iOS
+        $(this).blur();
+      })).on('mouseleave', function (e) {
+        var $b = $(this).find('.copy-btn');
+        setTimeout(function () {
+          $b.text('复制');
+        }, 300);
+      }).append(e);
+    })
+  </script>
+
+
+  
+
+</body>
+</html>

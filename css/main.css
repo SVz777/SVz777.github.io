@@ -542,7 +542,7 @@ pre,
 }
 pre,
 code {
-  font-family: consolas, Menlo, "PingFang SC", "Microsoft YaHei", monospace;
+  font-family: 'Fira Code', consolas, Menlo, "PingFang SC", "Microsoft YaHei", monospace;
 }
 code {
   overflow-wrap: break-word;
@@ -1904,7 +1904,7 @@ pre .javascript .function {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #a6bd4b;
+  background: #38ff9a;
 }
 .links-of-blogroll {
   font-size: 13px;
@@ -3007,4 +3007,43 @@ ul.breadcrumb li+li:last-child {
   .post-body {
     text-align: justify;
   }
+}
+@font-face {
+  font-family: 'Fira Code';
+  src: url("/fonts/FiraCode-Light.ttf");
+  src: url("/fonts/FiraCode-Light.ttf") format('truetype');
+  font-weight: 300;
+}
+@font-face {
+  font-family: 'Fira Code';
+  src: url("/fonts/FiraCode-Light.ttf");
+  src: url("/fonts/FiraCode-Light.ttf") format('truetype');
+  font-weight: 300;
+  font-style: oblique;
+}
+@font-face {
+  font-family: 'Fira Code';
+  src: url("/fonts/FiraCode-Light.ttf");
+  src: url("/fonts/FiraCode-Light.ttf") format('truetype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Fira Code';
+  src: url("/fonts/FiraCode-Light.ttf");
+  src: url("/fonts/FiraCode-Light.ttf") format('truetype');
+  font-weight: 400;
+  font-style: oblique;
+}
+@font-face {
+  font-family: 'Fira Code';
+  src: url("/fonts/FiraCode-Light.ttf");
+  src: url("/fonts/FiraCode-Light.ttf") format('truetype');
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'Fira Code';
+  src: url("/fonts/FiraCode-Light.ttf");
+  src: url("/fonts/FiraCode-Light.ttf") format('truetype');
+  font-weight: 700;
+  font-style: oblique;
 }
