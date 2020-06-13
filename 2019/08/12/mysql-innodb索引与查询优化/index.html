@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    }
+  };
+</script>
+
+  <meta name="description" content="一、 引言概要 (1)  innodb索引类型与B+树 (2)  索引使用注意事项 问题 (1)  InnoDb索引为什么要用b+树？ (2)  聚集索引与普通索引有什么区别？ (3)  为什么主键最好是自增？ (4)  组合索引有什么优势？ (5) 有哪些实际业务场景索引搞不定？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mysql-innodb索引与查询优化">
+<meta property="og:url" content="https://SVz777.github.io/2019/08/12/mysql-innodb索引与查询优化/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="一、 引言概要 (1)  innodb索引类型与B+树 (2)  索引使用注意事项 问题 (1)  InnoDb索引为什么要用b+树？ (2)  聚集索引与普通索引有什么区别？ (3)  为什么主键最好是自增？ (4)  组合索引有什么优势？ (5) 有哪些实际业务场景索引搞不定？">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://svz777.github.io/2019/08/12/mysql-innodb索引与查询优化/b.png">
+<meta property="og:image" content="https://svz777.github.io/2019/08/12/mysql-innodb索引与查询优化/b_plus.png">
+<meta property="og:image" content="https://svz777.github.io/2019/08/12/mysql-innodb索引与查询优化/b_star.png">
+<meta property="og:image" content="https://svz777.github.io/2019/08/12/mysql-innodb索引与查询优化/index.png">
+<meta property="og:updated_time" content="2019-11-20T16:38:02.399Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="mysql-innodb索引与查询优化">
+<meta name="twitter:description" content="一、 引言概要 (1)  innodb索引类型与B+树 (2)  索引使用注意事项 问题 (1)  InnoDb索引为什么要用b+树？ (2)  聚集索引与普通索引有什么区别？ (3)  为什么主键最好是自增？ (4)  组合索引有什么优势？ (5) 有哪些实际业务场景索引搞不定？">
+<meta name="twitter:image" content="https://svz777.github.io/2019/08/12/mysql-innodb索引与查询优化/b.png">
+
+
+
+
+
+  
+  
+  <link rel="canonical" href="https://SVz777.github.io/2019/08/12/mysql-innodb索引与查询优化/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  
+  <title>mysql-innodb索引与查询优化 | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://SVz777.github.io/2019/08/12/mysql-innodb索引与查询优化/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">mysql-innodb索引与查询优化
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-08-12 10:53:22" itemprop="dateCreated datePublished" datetime="2019-08-12T10:53:22+08:00">2019-08-12</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-11-21 00:38:02" itemprop="dateModified" datetime="2019-11-21T00:38:02+08:00">2019-11-21</time>
+              </span>
+            
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          <br>
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">本文字数：</span>
+              
+              <span title="本文字数">0</span>
+            </span>
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              
+              <span title="阅读时长">1 分钟</span>
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="一、-引言"><a href="#一、-引言" class="headerlink" title="一、 引言"></a>一、 引言</h2><p><strong>概要</strong></p>
+<p>(1)  innodb索引类型与B+树</p>
+<p>(2)  索引使用注意事项</p>
+<p><strong>问题</strong></p>
+<p>(1)  InnoDb索引为什么要用b+树？</p>
+<p>(2)  聚集索引与普通索引有什么区别？</p>
+<p>(3)  为什么主键最好是自增？</p>
+<p>(4)  组合索引有什么优势？</p>
+<p>(5) 有哪些实际业务场景索引搞不定？ </p>
+ <a id="more"></a>
+<h2 id="二、-innodb索引类型与B-树"><a href="#二、-innodb索引类型与B-树" class="headerlink" title="二、 innodb索引类型与B+树"></a>二、 innodb索引类型与B+树</h2><p>INNODB主要有几种索引：B+树索引，自适应哈希索引，全文索引 ，覆盖索引。<br>B+树索引是一种多叉平衡查找树。<br>自适应哈希索引是mysql对于频繁查询的数据采取的hash存储优化，用户无法选择设置。<br>全文索引主要用于全文检索使用。<br>覆盖索引说的是查询的字段都属于同一个索引字段，这样效率非常高。</p>
+<h3 id="查找树"><a href="#查找树" class="headerlink" title="查找树"></a>查找树</h3><p>​      查找树主要有：二叉查找树（Binary Search Tree），平衡二叉查找树（Balanced Binary Search Tree），红黑树(Red-Black Tree )，B-tree/B+-tree/ B*-tree (B~Tree)。前三者是典型的二叉查找树结构，其查找的时间复杂度O(log2N)与树的深度相关，那么降低树的深度自然会提高查找效率。</p>
+<h3 id="B树-B-树-B-树"><a href="#B树-B-树-B-树" class="headerlink" title="B树/B+树/B*树"></a>B树/B+树/B*树</h3><p>B树</p>
+<img src="/2019/08/12/mysql-innodb索引与查询优化/b.png" title="soft">
+<p>B+树</p>
+<img src="/2019/08/12/mysql-innodb索引与查询优化/b_plus.png" title="soft">
+<p>所有的叶子结点中包含了全部关键字的信息，及指向含有这些关键字记录的指针，且叶子结点本身依关键字的大小自小而大的顺序链接。</p>
+<p>数据库索引采用B+树的主要原因是: B树在提高了磁盘IO性能的同时并没有解决元素遍历的效率低下的问题。正是为了解决这个问题，B+树应运而生。B+树只要遍历叶子节点就可以实现整棵树的遍历。而且在数据库中基于范围的查询是非常频繁的，而B树不支持这样的操作（或者说效率太低）。</p>
+<p>B*树</p>
+<img src="/2019/08/12/mysql-innodb索引与查询优化/b_star.png" title="soft">
+<p>和B+树的主要区别：</p>
+<p>1、B*树中非根和非叶子结点都有指向兄弟的指针；</p>
+<p>2、B<em>树定义了叶子结点关键字个数至少为(2/3)</em>M，即块的最低使用率为2/3（代替B+树的1/2）</p>
+<h3 id="聚集索引和普通索引"><a href="#聚集索引和普通索引" class="headerlink" title="聚集索引和普通索引"></a>聚集索引和普通索引</h3><img src="/2019/08/12/mysql-innodb索引与查询优化/index.png" title="soft">
+<p>1、主键和普通索引都是B+树索引</p>
+<p>2、主键的叶子节点是：数据；普通索引的叶子节点是：主键的值</p>
+<p>3、普通索引的检索需要经过两次B+树查找：</p>
+<p>​     I）通过普通索引，找到：主键key</p>
+<p>​     II）通过主键key，查找到元素</p>
+<h3 id="自适应hash索引"><a href="#自适应hash索引" class="headerlink" title="自适应hash索引"></a>自适应hash索引</h3><p> Innodb存储引擎会监控对表上二级索引的查找，如果发现某二级索引被频繁访问，二级索引成为热数据，建立哈希索引可以带来速度的提升。经常访问的二级索引数据会自动被生成到hash索引里面去(最近连续被访问三次的数据)，自适应哈希索引通过缓冲池的B+树构造而来，因此建立的速度很快。</p>
+<p>自适应hash索引只适用于等值查询。</p>
+<h3 id="INNODB如何建立聚集索引"><a href="#INNODB如何建立聚集索引" class="headerlink" title="INNODB如何建立聚集索引"></a>INNODB如何建立聚集索引</h3><p>1）有主键，则INNODB使用它作为聚集索引。</p>
+<p>2）未定义主键，INNODB选第一个非NULL的唯一索引列，使用它作为聚集索引。</p>
+<p>3）如果1）、2）都没有，Mysql自动添加一个不可见不可引用的6byte大小的rowid作为聚集索引.</p>
+<h3 id="主键必须是自增"><a href="#主键必须是自增" class="headerlink" title="主键必须是自增"></a>主键必须是自增</h3><p>       如果表使用自增主键，那么每次插入新的记录，记录就会顺序添加到当前索引节点的后续位置，当一页写满，就会自动开辟一个新的页</p>
+<p>如果使用非自增主键（如果身份证号或学号等），由于每次插入主键的值近似于随机，<strong>因此每次新纪录都要被插到现有索引页得中间某个位置，此时MySQL不得不为了将新记录插到合适位置而移动数据</strong>，甚至目标页面可能已经被回写到磁盘上而从缓存中清掉，此时又要从磁盘上读回来，这增加了很多开销，同时频繁的移动、分页操作造成了大量的碎片，得到了不够紧凑的索引结构，后续不得不通过OPTIMIZE TABLE来重建表并优化填充页面。</p>
+<h3 id="普通索引的叶子节点内容"><a href="#普通索引的叶子节点内容" class="headerlink" title="普通索引的叶子节点内容"></a>普通索引的叶子节点内容</h3><p>​       存储的是主键的值。好处如下</p>
+<p>​       辅助索引使用主键作为”指针” 而不是使用地址值作为指针的好处是，减少了当出现行移动或者数据页分裂时辅助索引的维护工作，使用主键值当作指针会让辅助索引占用更多的空间，换来的好处是InnoDB在移动行时无须更新辅助索引中的这个”指针”。</p>
+<h3 id="普通索引的叶子节点空洞"><a href="#普通索引的叶子节点空洞" class="headerlink" title="普通索引的叶子节点空洞"></a>普通索引的叶子节点空洞</h3><p>B*树定义了叶子结点关键字个数至少为(2/3)*M，即块的最低使用率为2/3</p>
+<p>B+树的最低使用率是1/2,这是由树的分裂算法决定的。</p>
+<p>B+树的分裂：当一个结点满时，分配一个新的结点，并将原结点中1/2的数据复制到新结点，最后在父结点中增加新结点的指针；</p>
+<p>B*树的分裂：当一个结点满时，如果它的下一个兄弟结点未满，那么将一部分数据移到兄弟结点中，再在原结点插入关键字，最后修改父结点中兄弟结点的关键字(因为兄弟结点的关键字范围改变了）；</p>
+<p>​                      如果兄弟也满了，则在原结点与兄弟结点之间增加新结点，并各复制1/3的数据到新结点，最后在父结点增加新结点的指针；<br>所以，B*树分配新结点的概率比B+树要低，空间使用率更高； </p>
+<p><strong>每一次数据页分裂，都会导致叶子节点空洞的产生。</strong></p>
+<h3 id="COUNT查询较慢原因以及优化"><a href="#COUNT查询较慢原因以及优化" class="headerlink" title="COUNT查询较慢原因以及优化"></a>COUNT查询较慢原因以及优化</h3><p>​    count指令实现上采用实时统计方式，要么通过聚集索引统计，要么通过二级索引统计<br>​    在无可用的二级索引情况下，执行count会使MySQL扫描全表数据，当数据中存在大字段或字段较多时候，其效率非常低下（每个页只能包含较少的数据条数，需要访问的物理页较多）</p>
+<p>​      二级索引存储的数据为指定字段的值与主键值。当我们通过二级索引统计数据的时候，无需扫描数据文件；</p>
+<p>​      所以，可以建立合适的单子段普通索引，提高COUNT统计效率<br>​     </p>
+<h3 id="组合索引优势"><a href="#组合索引优势" class="headerlink" title="组合索引优势"></a>组合索引优势</h3><p>(1) 满足最左前缀的查询，都可以用到索引。</p>
+<p>(2) 覆盖索引查询，效率更快。</p>
+<h2 id="三、-索引使用注意事项"><a href="#三、-索引使用注意事项" class="headerlink" title="三、 索引使用注意事项"></a>三、 索引使用注意事项</h2><p>(1)  尽量选择区分度高的列作为索引。</p>
+<p>​      区分度的公式是count(distinct col)/count(*)，表示字段不重复的比例，比例越大我们扫描的记录数越少，唯一键的区分度是1</p>
+<p>(2) 选用自增ID作为主键。</p>
+<p>(3) 组合索引的建立需要进行仔细分析；</p>
+<p>​    1)、正确选择组合索引中的主列字段，一般是选择性较好的字段；</p>
+<p>     2)、组合索引的几个字段是否经常同时以AND方式出现在Where子句中？<br>          如果是，则可以建立复合索引；否则考虑单字段索引； </p>
+<p>​    3)、如果复合索引中包含的字段经常单独出现在Where子句中，则分解为多个单字段索引；</p>
+<p>     4)、如果复合索引所包含的字段超过3个，那么仔细考虑其必要性，考虑减少复合的字段；</p>
+<p>(4) 频繁进行数据操作的表，不要建立太多的索引；</p>
+<p>(5) 删除无用的索引，避免对执行计划造成负面影响；</p>
+<p>(6) 应尽量避免在WHERE子句中对字段进行NULL值判断，否则将导致引擎放弃使用索引而进行全表扫描。</p>
+<p>(7) 字符字段只建前缀索引, 最好不要做主键。</p>
+<p>(8) 使用同类型进行比较, 否则不会用到索引。</p>
+<p>(9)  尽量避免在WHERE子句中使用!= 或 &lt;&gt;，not like 操作符，否则将引擎放弃使用索引而进行全表扫描。</p>
+<p>(10) 索引不会包含有NULL值的列。</p>
+<p>(11) 单表索引建议控制在5个以内。</p>
+<p>(12) 什么时候不要使用索引？</p>
+<p>​    经常增删改的列不要建立索引.</p>
+<p>​    有大量重复的列不建立索引.</p>
+<p>​    表记录太少不要建立索引；</p>
+<p>…</p>
+
+      
+    </div>
+
+    
+
+    
+      
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/17/redis-源码学习-zset/" rel="next" title="redis-源码学习-zset">
+                <i class="fa fa-chevron-left"></i> redis-源码学习-zset
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/08/12/go-源码研读-channel/" rel="prev" title="go-源码研读-channel">
+                go-源码研读-channel <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+  
+  <p class="site-author-name" itemprop="name">SVz</p>
+  <div class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</div>
+</div>
+
+
+  <nav class="site-state motion-element">
+    
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">123</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">分类</span>
+        </a>
+      </div>
+    
+
+    
+  </nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
+          
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、-引言"><span class="nav-number">1.</span> <span class="nav-text">一、 引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二、-innodb索引类型与B-树"><span class="nav-number">2.</span> <span class="nav-text">二、 innodb索引类型与B+树</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#查找树"><span class="nav-number">2.1.</span> <span class="nav-text">查找树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#B树-B-树-B-树"><span class="nav-number">2.2.</span> <span class="nav-text">B树/B+树/B*树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#聚集索引和普通索引"><span class="nav-number">2.3.</span> <span class="nav-text">聚集索引和普通索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自适应hash索引"><span class="nav-number">2.4.</span> <span class="nav-text">自适应hash索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#INNODB如何建立聚集索引"><span class="nav-number">2.5.</span> <span class="nav-text">INNODB如何建立聚集索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#主键必须是自增"><span class="nav-number">2.6.</span> <span class="nav-text">主键必须是自增</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#普通索引的叶子节点内容"><span class="nav-number">2.7.</span> <span class="nav-text">普通索引的叶子节点内容</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#普通索引的叶子节点空洞"><span class="nav-number">2.8.</span> <span class="nav-text">普通索引的叶子节点空洞</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#COUNT查询较慢原因以及优化"><span class="nav-number">2.9.</span> <span class="nav-text">COUNT查询较慢原因以及优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#组合索引优势"><span class="nav-number">2.10.</span> <span class="nav-text">组合索引优势</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#三、-索引使用注意事项"><span class="nav-number">3.</span> <span class="nav-text">三、 索引使用注意事项</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">358k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">5:25</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.2.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/schemes/muse.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+  
+
+  
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// GET RESPONSIVE HEIGHT PASSED FROM IFRAME
+
+window.addEventListener("message", function(e) {
+  var data = e.data;
+  if ((typeof data === 'string') && (data.indexOf('ciu_embed') > -1)) {
+    var featureID = data.split(':')[1];
+    var height = data.split(':')[2];
+    $(`iframe[data-feature=${featureID}]`).height(parseInt(height) + 30);
+  }
+}, false);
+</script>
+
+
+
+
+
+
+
+
+  
+
+</body>
+</html>

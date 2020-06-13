@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    }
+  };
+</script>
+
+  <meta name="description" content="代码版本:1.12.7 Go中string并不像C一样只是个单纯的指针指向一片空间，而是在底层封装了一层结构体来存储。字符串构建过程是先跟据字符串构建stringStruct，再转换成string。 string在runtime包中就是stringStruct，对外呈现叫做string。 主要代码在src/runtime/string.go">
+<meta property="og:type" content="article">
+<meta property="og:title" content="go-源码研读-string">
+<meta property="og:url" content="https://SVz777.github.io/2019/08/12/go-源码研读-string/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="代码版本:1.12.7 Go中string并不像C一样只是个单纯的指针指向一片空间，而是在底层封装了一层结构体来存储。字符串构建过程是先跟据字符串构建stringStruct，再转换成string。 string在runtime包中就是stringStruct，对外呈现叫做string。 主要代码在src/runtime/string.go">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-11-20T16:38:02.399Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="go-源码研读-string">
+<meta name="twitter:description" content="代码版本:1.12.7 Go中string并不像C一样只是个单纯的指针指向一片空间，而是在底层封装了一层结构体来存储。字符串构建过程是先跟据字符串构建stringStruct，再转换成string。 string在runtime包中就是stringStruct，对外呈现叫做string。 主要代码在src/runtime/string.go">
+
+
+
+
+
+  
+  
+  <link rel="canonical" href="https://SVz777.github.io/2019/08/12/go-源码研读-string/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  
+  <title>go-源码研读-string | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://SVz777.github.io/2019/08/12/go-源码研读-string/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">go-源码研读-string
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-08-12 22:13:27" itemprop="dateCreated datePublished" datetime="2019-08-12T22:13:27+08:00">2019-08-12</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-11-21 00:38:02" itemprop="dateModified" datetime="2019-11-21T00:38:02+08:00">2019-11-21</time>
+              </span>
+            
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a></span>
+
+                
+                
+                  ，
+                
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Go/src/" itemprop="url" rel="index"><span itemprop="name">src</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          <br>
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">本文字数：</span>
+              
+              <span title="本文字数">0</span>
+            </span>
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              
+              <span title="阅读时长">1 分钟</span>
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>代码版本:<strong>1.12.7</strong></p>
+<p><code>Go</code>中<code>string</code>并不像<code>C</code>一样只是个单纯的指针指向一片空间，而是在底层封装了一层结构体来存储。字符串构建过程是先跟据字符串构建stringStruct，再转换成string。</p>
+<p><em>string在runtime包中就是stringStruct，对外呈现叫做string。</em></p>
+<p>主要代码在<code>src/runtime/string.go</code></p>
+<a id="more"></a>
+<h1 id="常量定义"><a href="#常量定义" class="headerlink" title="常量定义"></a>常量定义</h1><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// The constant is known to the compiler.</span></span><br><span class="line"><span class="comment">// There is no fundamental theory behind this number.</span></span><br><span class="line"><span class="comment">// 这句话的意思是，就是想设32，没有原因:)</span></span><br><span class="line"><span class="keyword">const</span> tmpStringBufSize = <span class="number">32</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">	maxUint = ^<span class="keyword">uint</span>(<span class="number">0</span>)</span><br><span class="line">	maxInt  = <span class="keyword">int</span>(maxUint &gt;&gt; <span class="number">1</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>为啥<code>maxUint</code>和<code>maxInt</code>要这么写而不是写成常量是因为不同平台计算出来的不一样。</p>
+<h1 id="类型定义"><a href="#类型定义" class="headerlink" title="类型定义"></a>类型定义</h1><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> tmpBuf [tmpStringBufSize]<span class="keyword">byte</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> stringStruct <span class="keyword">struct</span> &#123;</span><br><span class="line">	str unsafe.Pointer</span><br><span class="line">	<span class="built_in">len</span> <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Variant with *byte pointer type for DWARF debugging.</span></span><br><span class="line"><span class="keyword">type</span> stringStructDWARF <span class="keyword">struct</span> &#123;</span><br><span class="line">	str *<span class="keyword">byte</span></span><br><span class="line">	<span class="built_in">len</span> <span class="keyword">int</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>文件的一开头就定义了一个<code>tmpBuf</code>这个类型，看名字也知道是一个临时存储用的东西。</p>
+<p>下面的<code>stringStruct</code>才是真正的<code>`string</code>定义,在<code>stringStruct</code>中存储了具体数据的指针和数据的长度。而<code>stringStructDWARF</code>这个则是debug的时候用的。</p>
+<h1 id="函数定义"><a href="#函数定义" class="headerlink" title="函数定义"></a>函数定义</h1><h2 id="类型转换相关的函数"><a href="#类型转换相关的函数" class="headerlink" title="类型转换相关的函数"></a>类型转换相关的函数</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">//string转成stringStruct，就是指针强转</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">stringStructOf</span><span class="params">(sp *<span class="keyword">string</span>)</span> *<span class="title">stringStruct</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> (*stringStruct)(unsafe.Pointer(sp))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// slicebytetostringtmp returns a "string" referring to the actual []byte bytes.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// Callers need to ensure that the returned string will not be used after</span></span><br><span class="line"><span class="comment">// the calling goroutine modifies the original slice or synchronizes with</span></span><br><span class="line"><span class="comment">// another goroutine.</span></span><br><span class="line"><span class="comment">// 调用者得确保不会在另外一个goroutine里修改源切片</span></span><br><span class="line"><span class="comment">// The function is only called when instrumenting</span></span><br><span class="line"><span class="comment">// and otherwise intrinsified by the compiler.</span></span><br><span class="line"><span class="comment">// 这个函数仅在检测时调用，或者是编译器优化的时候用。</span></span><br><span class="line"><span class="comment">// Some internal compiler optimizations use this function.</span></span><br><span class="line"><span class="comment">// - Used for m[T1&#123;... Tn&#123;..., string(k), ...&#125; ...&#125;] and m[string(k)]</span></span><br><span class="line"><span class="comment">//   where k is []byte, T1 to Tn is a nesting of struct and array literals.</span></span><br><span class="line"><span class="comment">// - Used for "&lt;"+string(b)+"&gt;" concatenation where b is []byte.</span></span><br><span class="line"><span class="comment">// - Used for string(b)=="foo" comparison where b is []byte.</span></span><br><span class="line"><span class="comment">//byte切片转string，也是指针强转，指向的还是原来的地址，所以会相互影响</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">slicebytetostringtmp</span><span class="params">(b []<span class="keyword">byte</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> raceenabled &amp;&amp; <span class="built_in">len</span>(b) &gt; <span class="number">0</span> &#123;</span><br><span class="line">        <span class="comment">//竞争检测，忽略</span></span><br><span class="line">		racereadrangepc(unsafe.Pointer(&amp;b[<span class="number">0</span>]),</span><br><span class="line">			<span class="keyword">uintptr</span>(<span class="built_in">len</span>(b)),</span><br><span class="line">			getcallerpc(),</span><br><span class="line">			funcPC(slicebytetostringtmp))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> msanenabled &amp;&amp; <span class="built_in">len</span>(b) &gt; <span class="number">0</span> &#123;</span><br><span class="line">        <span class="comment">//Memory Sanitizer 用于检测危险指针等内存问题，忽略</span></span><br><span class="line">		msanread(unsafe.Pointer(&amp;b[<span class="number">0</span>]), <span class="keyword">uintptr</span>(<span class="built_in">len</span>(b)))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> *(*<span class="keyword">string</span>)(unsafe.Pointer(&amp;b))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//string转byte切片，这个就不是指针强转了，是内存拷贝</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">stringtoslicebyte</span><span class="params">(buf *tmpBuf, s <span class="keyword">string</span>)</span> []<span class="title">byte</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> b []<span class="keyword">byte</span></span><br><span class="line">	<span class="keyword">if</span> buf != <span class="literal">nil</span> &amp;&amp; <span class="built_in">len</span>(s) &lt;= <span class="built_in">len</span>(buf) &#123;</span><br><span class="line">        <span class="comment">// 判断一下空间够不够</span></span><br><span class="line">		*buf = tmpBuf&#123;&#125;</span><br><span class="line">		b = buf[:<span class="built_in">len</span>(s)]</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 不够就去申请</span></span><br><span class="line">		b = rawbyteslice(<span class="built_in">len</span>(s))</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">// 然后拷贝</span></span><br><span class="line">	<span class="built_in">copy</span>(b, s)</span><br><span class="line">	<span class="keyword">return</span> b</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//string转rune切片，一般情况是多字节编码的时候用（我猜的）</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">stringtoslicerune</span><span class="params">(buf *[tmpStringBufSize]<span class="keyword">rune</span>, s <span class="keyword">string</span>)</span> []<span class="title">rune</span></span> &#123;</span><br><span class="line">	<span class="comment">// two passes.</span></span><br><span class="line">    <span class="comment">// 双扫描算法。。也就是先for一次计数，然后判断空间，然后再for一次做正事</span></span><br><span class="line">	<span class="comment">// unlike slicerunetostring, no race because strings are immutable.</span></span><br><span class="line">	n := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> <span class="keyword">range</span> s &#123;</span><br><span class="line">        <span class="comment">//注意这里是用range来遍历s来计算长度而不是用len,因为len算的是字节数</span></span><br><span class="line">        <span class="comment">//对于多字节编码，比如中文来说，字数！=字节数</span></span><br><span class="line">		n++</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> a []<span class="keyword">rune</span></span><br><span class="line">	<span class="keyword">if</span> buf != <span class="literal">nil</span> &amp;&amp; n &lt;= <span class="built_in">len</span>(buf) &#123;</span><br><span class="line">		*buf = [tmpStringBufSize]<span class="keyword">rune</span>&#123;&#125;</span><br><span class="line">		a = buf[:n]</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		a = rawruneslice(n)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	n = <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> _, r := <span class="keyword">range</span> s &#123;</span><br><span class="line">		a[n] = r</span><br><span class="line">		n++</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> a</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//rune切片转string，一般是多字节编码用（还是我猜的）</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">slicerunetostring</span><span class="params">(buf *tmpBuf, a []<span class="keyword">rune</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> raceenabled &amp;&amp; <span class="built_in">len</span>(a) &gt; <span class="number">0</span> &#123;</span><br><span class="line">        <span class="comment">//竞争检测，忽略</span></span><br><span class="line">		racereadrangepc(unsafe.Pointer(&amp;a[<span class="number">0</span>]),</span><br><span class="line">			<span class="keyword">uintptr</span>(<span class="built_in">len</span>(a))*unsafe.Sizeof(a[<span class="number">0</span>]),</span><br><span class="line">			getcallerpc(),</span><br><span class="line">			funcPC(slicerunetostring))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> msanenabled &amp;&amp; <span class="built_in">len</span>(a) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		<span class="comment">//Memory Sanitizer 用于检测危险指针等内存问题，忽略</span></span><br><span class="line">		msanread(unsafe.Pointer(&amp;a[<span class="number">0</span>]), <span class="keyword">uintptr</span>(<span class="built_in">len</span>(a))*unsafe.Sizeof(a[<span class="number">0</span>]))</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">//这个变量没用，单纯为了调用encoderune这个函数，因为这个函数会把r转到第一个参数里面，下面再详细看这个函数</span></span><br><span class="line">	<span class="keyword">var</span> dum [<span class="number">4</span>]<span class="keyword">byte</span></span><br><span class="line">	size1 := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> _, r := <span class="keyword">range</span> a &#123;</span><br><span class="line">        <span class="comment">// 算大小</span></span><br><span class="line">		size1 += encoderune(dum[:], r)</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">//申请空间</span></span><br><span class="line">	s, b := rawstringtmp(buf, size1+<span class="number">3</span>)</span><br><span class="line">	size2 := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> _, r := <span class="keyword">range</span> a &#123;</span><br><span class="line">		<span class="comment">// check for race</span></span><br><span class="line">		<span class="keyword">if</span> size2 &gt;= size1 &#123;</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">        <span class="comment">//干正事</span></span><br><span class="line">		size2 += encoderune(b[size2:], r)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> s[:size2]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// int转string，注意是 int ,不是int64</span></span><br><span class="line"><span class="comment">// 虽然我也不知道为啥int转string非要传一个int64，只能理解是编译器会干点什么</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">intstring</span><span class="params">(buf *[4]<span class="keyword">byte</span>, v <span class="keyword">int64</span>)</span> <span class="params">(s <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">    <span class="comment">//runeSelf是一个常量 0x80,也就是127</span></span><br><span class="line">    <span class="comment">//staticbytes是一个常量数组，里面是0-127的的字节码</span></span><br><span class="line">	<span class="keyword">if</span> v &gt;= <span class="number">0</span> &amp;&amp; v &lt; runeSelf &#123;</span><br><span class="line">        <span class="comment">// 所以这个其实是直接扫表加速处理</span></span><br><span class="line">		stringStructOf(&amp;s).str = unsafe.Pointer(&amp;staticbytes[v])</span><br><span class="line">		stringStructOf(&amp;s).<span class="built_in">len</span> = <span class="number">1</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> b []<span class="keyword">byte</span></span><br><span class="line">	<span class="keyword">if</span> buf != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="comment">//有空间，直接用</span></span><br><span class="line">		b = buf[:]</span><br><span class="line">		s = slicebytetostringtmp(b)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">//没空间，申请</span></span><br><span class="line">		s, b = rawstring(<span class="number">4</span>)</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">//rune其实就是int32，所以把int64转int32再转int64看是不是自己来判断是否是一个int大小的</span></span><br><span class="line">	<span class="keyword">if</span> <span class="keyword">int64</span>(<span class="keyword">rune</span>(v)) != v &#123;</span><br><span class="line">		v = runeError</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">//再算一遍大小，并且填到b里面去</span></span><br><span class="line">	n := encoderune(b, <span class="keyword">rune</span>(v))</span><br><span class="line">	<span class="keyword">return</span> s[:n]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 这个函数不是string.go里的，是在src/runtime/utf8.go:104</span></span><br><span class="line"><span class="comment">// encoderune writes into p (which must be large enough) the UTF-8 encoding of the rune.</span></span><br><span class="line"><span class="comment">// It returns the number of bytes written.</span></span><br><span class="line"><span class="comment">// 注释的意思是，会把rune进行utf8编码写到p（必须保证空间足够大）里，</span></span><br><span class="line"><span class="comment">// 返回值是写入的字节数</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">encoderune</span><span class="params">(p []<span class="keyword">byte</span>, r <span class="keyword">rune</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="comment">// Negative values are erroneous. Making it unsigned addresses the problem.</span></span><br><span class="line">	<span class="keyword">switch</span> i := <span class="keyword">uint32</span>(r); &#123;</span><br><span class="line">	<span class="keyword">case</span> i &lt;= rune1Max: <span class="comment">//1&lt;&lt;7 -1 127 ，一个字节的情况</span></span><br><span class="line">		p[<span class="number">0</span>] = <span class="keyword">byte</span>(r)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span></span><br><span class="line">	<span class="keyword">case</span> i &lt;= rune2Max: <span class="comment">//1&lt;&lt;11 -1 2047,两个字节</span></span><br><span class="line">		_ = p[<span class="number">1</span>] <span class="comment">// eliminate bounds checks</span></span><br><span class="line">		p[<span class="number">0</span>] = t2 | <span class="keyword">byte</span>(r&gt;&gt;<span class="number">6</span>)</span><br><span class="line">		p[<span class="number">1</span>] = tx | <span class="keyword">byte</span>(r)&amp;maskx</span><br><span class="line">		<span class="keyword">return</span> <span class="number">2</span></span><br><span class="line">	<span class="keyword">case</span> i &gt; maxRune, surrogateMin &lt;= i &amp;&amp; i &lt;= surrogateMax: <span class="comment">//看是不是不再unicode处理范围</span></span><br><span class="line">  		<span class="comment">// maxRune '\U0010FFFF' // Maximum valid Unicode code point.</span></span><br><span class="line">        <span class="comment">// Code points in the surrogate range are not valid for UTF-8.</span></span><br><span class="line">        <span class="comment">//const (</span></span><br><span class="line">        <span class="comment">//	surrogateMin = 0xD800</span></span><br><span class="line">        <span class="comment">//	surrogateMax = 0xDFFF</span></span><br><span class="line">		<span class="comment">//)</span></span><br><span class="line">		r = runeError</span><br><span class="line">		<span class="keyword">fallthrough</span></span><br><span class="line">	<span class="keyword">case</span> i &lt;= rune3Max:<span class="comment">// 1&lt;&lt;16 -1 65535,三个字节</span></span><br><span class="line">		_ = p[<span class="number">2</span>] <span class="comment">// eliminate bounds checks</span></span><br><span class="line">		p[<span class="number">0</span>] = t3 | <span class="keyword">byte</span>(r&gt;&gt;<span class="number">12</span>)</span><br><span class="line">		p[<span class="number">1</span>] = tx | <span class="keyword">byte</span>(r&gt;&gt;<span class="number">6</span>)&amp;maskx</span><br><span class="line">		p[<span class="number">2</span>] = tx | <span class="keyword">byte</span>(r)&amp;maskx</span><br><span class="line">		<span class="keyword">return</span> <span class="number">3</span></span><br><span class="line">	<span class="keyword">default</span>:<span class="comment">// 自然就是四个字节啦</span></span><br><span class="line">		_ = p[<span class="number">3</span>] <span class="comment">// eliminate bounds checks</span></span><br><span class="line">		p[<span class="number">0</span>] = t4 | <span class="keyword">byte</span>(r&gt;&gt;<span class="number">18</span>)</span><br><span class="line">		p[<span class="number">1</span>] = tx | <span class="keyword">byte</span>(r&gt;&gt;<span class="number">12</span>)&amp;maskx</span><br><span class="line">		p[<span class="number">2</span>] = tx | <span class="keyword">byte</span>(r&gt;&gt;<span class="number">6</span>)&amp;maskx</span><br><span class="line">		p[<span class="number">3</span>] = tx | <span class="keyword">byte</span>(r)&amp;maskx</span><br><span class="line">		<span class="keyword">return</span> <span class="number">4</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="内存申请相关的函数"><a href="#内存申请相关的函数" class="headerlink" title="内存申请相关的函数"></a>内存申请相关的函数</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// rawstring allocates storage for a new string. The returned</span></span><br><span class="line"><span class="comment">// string and byte slice both refer to the same storage.</span></span><br><span class="line"><span class="comment">// The storage is not zeroed. Callers should use</span></span><br><span class="line"><span class="comment">// b to set the string contents and then drop b.</span></span><br><span class="line"><span class="comment">// 申请size大小的一片内存（不为空，就是纯内存空间）</span></span><br><span class="line"><span class="comment">// 返回的s和b其实指向的一个地方，不过类型不一样</span></span><br><span class="line"><span class="comment">// 调用者应该用b来进行赋值，完成后就释放b</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">rawstring</span><span class="params">(size <span class="keyword">int</span>)</span> <span class="params">(s <span class="keyword">string</span>, b []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">    <span class="comment">// 这个函数是申请空间,第一个参数是大小，第二个参数是类型，第三个参数是是否初始化为0</span></span><br><span class="line">    <span class="comment">// 小对象直接在goroutine的栈上申请</span></span><br><span class="line">    <span class="comment">// 大对象(&gt;32kb)会直接在堆上申请</span></span><br><span class="line">	p := mallocgc(<span class="keyword">uintptr</span>(size), <span class="literal">nil</span>, <span class="literal">false</span>)</span><br><span class="line"></span><br><span class="line">	stringStructOf(&amp;s).str = p</span><br><span class="line">	stringStructOf(&amp;s).<span class="built_in">len</span> = size</span><br><span class="line"></span><br><span class="line">	*(*slice)(unsafe.Pointer(&amp;b)) = slice&#123;p, size, size&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// rawbyteslice allocates a new byte slice. The byte slice is not zeroed.</span></span><br><span class="line"><span class="comment">// 申请size大的byte切片</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">rawbyteslice</span><span class="params">(size <span class="keyword">int</span>)</span> <span class="params">(b []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">    <span class="comment">//内存大小对齐处理，对go来说内存片是分成不同大小来处理的</span></span><br><span class="line">	<span class="built_in">cap</span> := roundupsize(<span class="keyword">uintptr</span>(size))</span><br><span class="line">	p := mallocgc(<span class="built_in">cap</span>, <span class="literal">nil</span>, <span class="literal">false</span>)</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">cap</span> != <span class="keyword">uintptr</span>(size) &#123;</span><br><span class="line">        <span class="comment">//有对齐的话清空一下这片内存</span></span><br><span class="line">		memclrNoHeapPointers(add(p, <span class="keyword">uintptr</span>(size)), <span class="built_in">cap</span>-<span class="keyword">uintptr</span>(size))</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	*(*slice)(unsafe.Pointer(&amp;b)) = slice&#123;p, size, <span class="keyword">int</span>(<span class="built_in">cap</span>)&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// rawruneslice allocates a new rune slice. The rune slice is not zeroed.</span></span><br><span class="line"><span class="comment">// 申请size大小的rune切片,rune是4字节的，所以函数里出现了很多4</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">rawruneslice</span><span class="params">(size <span class="keyword">int</span>)</span> <span class="params">(b []<span class="keyword">rune</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> <span class="keyword">uintptr</span>(size) &gt; maxAlloc/<span class="number">4</span> &#123;</span><br><span class="line">        <span class="comment">//看看内存够不够</span></span><br><span class="line">		throw(<span class="string">"out of memory"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">//下面和上面一样的处理方式</span></span><br><span class="line">	mem := roundupsize(<span class="keyword">uintptr</span>(size) * <span class="number">4</span>)</span><br><span class="line">	p := mallocgc(mem, <span class="literal">nil</span>, <span class="literal">false</span>)</span><br><span class="line">	<span class="keyword">if</span> mem != <span class="keyword">uintptr</span>(size)*<span class="number">4</span> &#123;</span><br><span class="line">		memclrNoHeapPointers(add(p, <span class="keyword">uintptr</span>(size)*<span class="number">4</span>), mem-<span class="keyword">uintptr</span>(size)*<span class="number">4</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	*(*slice)(unsafe.Pointer(&amp;b)) = slice&#123;p, size, <span class="keyword">int</span>(mem / <span class="number">4</span>)&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="工具函数"><a href="#工具函数" class="headerlink" title="工具函数"></a>工具函数</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">concatstrings</span><span class="params">(buf *tmpBuf, a []<span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">    <span class="comment">//首先声明一些用的上的变量</span></span><br><span class="line">	idx := <span class="number">0</span></span><br><span class="line">	l := <span class="number">0</span></span><br><span class="line">	count := <span class="number">0</span></span><br><span class="line">    </span><br><span class="line">	<span class="keyword">for</span> i, x := <span class="keyword">range</span> a &#123;</span><br><span class="line">		n := <span class="built_in">len</span>(x)</span><br><span class="line">		<span class="keyword">if</span> n == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="comment">//如果当前的这个string长度为0直接跳过</span></span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> l+n &lt; l &#123;</span><br><span class="line">            <span class="comment">//判断是不是超过大小，为什么这么写呢，举个例子</span></span><br><span class="line">            <span class="comment">//比如 l是一个int64，那么它的最大值就是2^63-1</span></span><br><span class="line">            <span class="comment">//如果我的l现在是2^63,然后n现在是2</span></span><br><span class="line">         	<span class="comment">//那么我的l就会越界变成最小值</span></span><br><span class="line">            <span class="comment">//所以判断是不是加完小于自己就行了</span></span><br><span class="line">			throw(<span class="string">"string concatenation too long"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		l += n</span><br><span class="line">		count++</span><br><span class="line">		idx = i</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> count == <span class="number">0</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">""</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// If there is just one string and either it is not on the stack</span></span><br><span class="line">	<span class="comment">// or our result does not escape the calling frame (buf != nil),</span></span><br><span class="line">	<span class="comment">// then we can return that string directly.</span></span><br><span class="line">    <span class="comment">// 想明白这个位置的话，首先得理解go里面对变量的内存处理</span></span><br><span class="line">    <span class="comment">// 我们都知道go里面的函数是可以返回一个地址的，这点跟c不一样，</span></span><br><span class="line">    <span class="comment">// c里面如果返回一个局部变量的地址，这个地址在函数执行完之后会被释放掉</span></span><br><span class="line">    <span class="comment">// 但是go里面返回的地址则不会，是别的地方可用的，go是怎么实现的呢？</span></span><br><span class="line">    <span class="comment">// 主要是go会对代码进行逃逸分析，如果说这个变量的适用范围不仅仅在自己的调用栈</span></span><br><span class="line">    <span class="comment">// 那么会直接把它分配到堆上而不是自己的栈上。</span></span><br><span class="line">	<span class="keyword">if</span> count == <span class="number">1</span> &amp;&amp; (buf != <span class="literal">nil</span> || !stringDataOnStack(a[idx])) &#123;</span><br><span class="line">        <span class="comment">//stringDataOnStack见下方工具函数</span></span><br><span class="line">		<span class="keyword">return</span> a[idx]</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">//判断内存空间够不够，不够就申请</span></span><br><span class="line">    <span class="comment">//这里返回的s是实际的string，b其实是一个游标指针，方便后面拷贝</span></span><br><span class="line">    <span class="comment">//同见下方工具函数</span></span><br><span class="line">	s, b := rawstringtmp(buf, l)</span><br><span class="line">	<span class="keyword">for</span> _, x := <span class="keyword">range</span> a &#123;</span><br><span class="line">        <span class="comment">//开始实际的拷贝，每次都是把x拷贝到b指向到空间，然后把b往后移动len(x)长度继续考呗</span></span><br><span class="line">		<span class="built_in">copy</span>(b, x)</span><br><span class="line">		b = b[<span class="built_in">len</span>(x):]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//下面的那2，3，4，5 就不说了，是编译器用来做加速优化的，因为其实大部分字符串相加不会超过5个。</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">concatstring2</span><span class="params">(buf *tmpBuf, a [2]<span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> concatstrings(buf, a[:])</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">concatstring3</span><span class="params">(buf *tmpBuf, a [3]<span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> concatstrings(buf, a[:])</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">concatstring4</span><span class="params">(buf *tmpBuf, a [4]<span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> concatstrings(buf, a[:])</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">concatstring5</span><span class="params">(buf *tmpBuf, a [5]<span class="keyword">string</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> concatstrings(buf, a[:])</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// s中找t开始位置，正常朴素算法</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">index</span><span class="params">(s, t <span class="keyword">string</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(t) == <span class="number">0</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(s); i++ &#123;</span><br><span class="line">		<span class="keyword">if</span> s[i] == t[<span class="number">0</span>] &amp;&amp; hasPrefix(s[i:], t) &#123;</span><br><span class="line">			<span class="keyword">return</span> i</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 判断t在不在s中</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">contains</span><span class="params">(s, t <span class="keyword">string</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> index(s, t) &gt;= <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 判断s是否以prefix开头</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">hasPrefix</span><span class="params">(s, prefix <span class="keyword">string</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">len</span>(s) &gt;= <span class="built_in">len</span>(prefix) &amp;&amp; s[:<span class="built_in">len</span>(prefix)] == prefix</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// atoi parses an int from a string s.</span></span><br><span class="line"><span class="comment">// The bool result reports whether s is a number</span></span><br><span class="line"><span class="comment">// representable by a value of type int.</span></span><br><span class="line"><span class="comment">// atoi，也是朴素算法</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">atoi</span><span class="params">(s <span class="keyword">string</span>)</span> <span class="params">(<span class="keyword">int</span>, <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> s == <span class="string">""</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>, <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	neg := <span class="literal">false</span></span><br><span class="line">	<span class="keyword">if</span> s[<span class="number">0</span>] == <span class="string">'-'</span> &#123;</span><br><span class="line">		neg = <span class="literal">true</span></span><br><span class="line">		s = s[<span class="number">1</span>:]</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	un := <span class="keyword">uint</span>(<span class="number">0</span>)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(s); i++ &#123;</span><br><span class="line">		c := s[i]</span><br><span class="line">		<span class="keyword">if</span> c &lt; <span class="string">'0'</span> || c &gt; <span class="string">'9'</span> &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>, <span class="literal">false</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> un &gt; maxUint/<span class="number">10</span> &#123;</span><br><span class="line">			<span class="comment">// overflow</span></span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>, <span class="literal">false</span></span><br><span class="line">		&#125;</span><br><span class="line">		un *= <span class="number">10</span></span><br><span class="line">		un1 := un + <span class="keyword">uint</span>(c) - <span class="string">'0'</span></span><br><span class="line">		<span class="keyword">if</span> un1 &lt; un &#123;</span><br><span class="line">			<span class="comment">// overflow</span></span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>, <span class="literal">false</span></span><br><span class="line">		&#125;</span><br><span class="line">		un = un1</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> !neg &amp;&amp; un &gt; <span class="keyword">uint</span>(maxInt) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>, <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> neg &amp;&amp; un &gt; <span class="keyword">uint</span>(maxInt)+<span class="number">1</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>, <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	n := <span class="keyword">int</span>(un)</span><br><span class="line">	<span class="keyword">if</span> neg &#123;</span><br><span class="line">		n = -n</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> n, <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// atoi32 is like atoi but for integers</span></span><br><span class="line"><span class="comment">// that fit into an int32.</span></span><br><span class="line"><span class="comment">// 就是调一下上方的函数</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">atoi32</span><span class="params">(s <span class="keyword">string</span>)</span> <span class="params">(<span class="keyword">int32</span>, <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> n, ok := atoi(s); n == <span class="keyword">int</span>(<span class="keyword">int32</span>(n)) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">int32</span>(n), ok</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>, <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="辅助函数"><a href="#辅助函数" class="headerlink" title="辅助函数"></a>辅助函数</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// stringDataOnStack reports whether the string's data is</span></span><br><span class="line"><span class="comment">// stored on the current goroutine's stack.</span></span><br><span class="line"><span class="comment">// 判断string是否在当前栈空间内</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">stringDataOnStack</span><span class="params">(s <span class="keyword">string</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	ptr := <span class="keyword">uintptr</span>(stringStructOf(&amp;s).str)</span><br><span class="line">	stk := getg().stack</span><br><span class="line">    <span class="comment">//对于go来说，每个goroutine的栈空间记录都是记录栈顶和栈底的地址</span></span><br><span class="line">    <span class="comment">//所以只用判断这个指针是不是在这两之间就可以判断在不在当前栈空间上</span></span><br><span class="line">	<span class="keyword">return</span> stk.lo &lt;= ptr &amp;&amp; ptr &lt; stk.hi</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 封装了一下，如果buf空间够就直接用buf不够才申请</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">rawstringtmp</span><span class="params">(buf *tmpBuf, l <span class="keyword">int</span>)</span> <span class="params">(s <span class="keyword">string</span>, b []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> buf != <span class="literal">nil</span> &amp;&amp; l &lt;= <span class="built_in">len</span>(buf) &#123;</span><br><span class="line">		b = buf[:l]</span><br><span class="line">        <span class="comment">//把byte的切片转成string</span></span><br><span class="line">		s = slicebytetostringtmp(b)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">//申请空间</span></span><br><span class="line">		s, b = rawstring(l)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//go:nosplit</span></span><br><span class="line"><span class="comment">//无拷贝的byte转string，就是指针类型转换</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">gostringnocopy</span><span class="params">(str *<span class="keyword">byte</span>)</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	ss := stringStruct&#123;str: unsafe.Pointer(str), <span class="built_in">len</span>: findnull(str)&#125;</span><br><span class="line">	s := *(*<span class="keyword">string</span>)(unsafe.Pointer(&amp;ss))</span><br><span class="line">	<span class="keyword">return</span> s</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>所以从<code>string.go</code>里来看，里面其实就两种东西</p>
+<ol>
+<li>two passes 先计数，然后判断内存，然后做操作</li>
+<li>指针类型转换</li>
+</ol>
+
+      
+    </div>
+
+    
+
+    
+      
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/08/12/go-源码研读-interface/" rel="next" title="go-源码研读-interface">
+                <i class="fa fa-chevron-left"></i> go-源码研读-interface
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/08/26/go-源码研读-slice/" rel="prev" title="go-源码研读-slice">
+                go-源码研读-slice <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+  
+  <p class="site-author-name" itemprop="name">SVz</p>
+  <div class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</div>
+</div>
+
+
+  <nav class="site-state motion-element">
+    
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">123</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">分类</span>
+        </a>
+      </div>
+    
+
+    
+  </nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
+          
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#常量定义"><span class="nav-number">1.</span> <span class="nav-text">常量定义</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#类型定义"><span class="nav-number">2.</span> <span class="nav-text">类型定义</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#函数定义"><span class="nav-number">3.</span> <span class="nav-text">函数定义</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#类型转换相关的函数"><span class="nav-number">3.1.</span> <span class="nav-text">类型转换相关的函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内存申请相关的函数"><span class="nav-number">3.2.</span> <span class="nav-text">内存申请相关的函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#工具函数"><span class="nav-number">3.3.</span> <span class="nav-text">工具函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#辅助函数"><span class="nav-number">3.4.</span> <span class="nav-text">辅助函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#结语"><span class="nav-number">4.</span> <span class="nav-text">结语</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">358k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">5:25</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.2.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/schemes/muse.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+  
+
+  
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// GET RESPONSIVE HEIGHT PASSED FROM IFRAME
+
+window.addEventListener("message", function(e) {
+  var data = e.data;
+  if ((typeof data === 'string') && (data.indexOf('ciu_embed') > -1)) {
+    var featureID = data.split(':')[1];
+    var height = data.split(':')[2];
+    $(`iframe[data-feature=${featureID}]`).height(parseInt(height) + 30);
+  }
+}, false);
+</script>
+
+
+
+
+
+
+
+
+  
+
+</body>
+</html>
