@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    }
+  };
+</script>
+
+  <meta name="description" content="背景介绍使用互斥锁，可以避免多个 Go 协程同时访问修改共享资源的代码。但是对于多个协程同时读的操作，没有修改共享资源，不需要添加互斥锁，互斥锁在这种场景下，会大幅度降低程序性能。 在这种场景下，我们真正需要具有读并发、互斥写、读写互斥等特点的逻辑，读写锁是其中的一种实现。">
+<meta name="keywords" content="mutex,RWmutex">
+<meta property="og:type" content="article">
+<meta property="og:title" content="go-源码研读-RWmutex">
+<meta property="og:url" content="https://SVz777.github.io/2020/05/18/go-源码研读-RWmutex/index.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="背景介绍使用互斥锁，可以避免多个 Go 协程同时访问修改共享资源的代码。但是对于多个协程同时读的操作，没有修改共享资源，不需要添加互斥锁，互斥锁在这种场景下，会大幅度降低程序性能。 在这种场景下，我们真正需要具有读并发、互斥写、读写互斥等特点的逻辑，读写锁是其中的一种实现。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2021-04-11T15:17:06.623Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="go-源码研读-RWmutex">
+<meta name="twitter:description" content="背景介绍使用互斥锁，可以避免多个 Go 协程同时访问修改共享资源的代码。但是对于多个协程同时读的操作，没有修改共享资源，不需要添加互斥锁，互斥锁在这种场景下，会大幅度降低程序性能。 在这种场景下，我们真正需要具有读并发、互斥写、读写互斥等特点的逻辑，读写锁是其中的一种实现。">
+
+
+
+
+
+  
+  
+  <link rel="canonical" href="https://SVz777.github.io/2020/05/18/go-源码研读-RWmutex/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  
+  <title>go-源码研读-RWmutex | SHIELD</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">SHIELD</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://SVz777.github.io/2020/05/18/go-源码研读-RWmutex/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="SVz">
+      <meta itemprop="description" content="一个在折腾与被折腾之间的程序猿">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="SHIELD">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">go-源码研读-RWmutex
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2020-05-18 11:14:11" itemprop="dateCreated datePublished" datetime="2020-05-18T11:14:11+08:00">2020-05-18</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2021-04-11 23:17:06" itemprop="dateModified" datetime="2021-04-11T23:17:06+08:00">2021-04-11</time>
+              </span>
+            
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a></span>
+
+                
+                
+                  ，
+                
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Go/src/" itemprop="url" rel="index"><span itemprop="name">src</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          <br>
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">本文字数：</span>
+              
+              <span title="本文字数">0</span>
+            </span>
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              
+              <span title="阅读时长">1 分钟</span>
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h1><p>使用互斥锁，可以避免多个 Go 协程同时访问修改共享资源的代码。但是对于多个协程同时读的操作，没有修改共享资源，不需要添加互斥锁，互斥锁在这种场景下，会大幅度降低程序性能。</p>
+<p>在这种场景下，我们真正需要具有读并发、互斥写、读写互斥等特点的逻辑，读写锁是其中的一种实现。</p>
+<a id="more"></a>
+<h1 id="常见用法"><a href="#常见用法" class="headerlink" title="常见用法"></a>常见用法</h1><p>声明一个读写锁</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> m *sync.RWMutex</span><br></pre></td></tr></table></figure>
+<p>读加锁和读解锁</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">m.RLock()</span><br><span class="line">m.RUnlock()</span><br></pre></td></tr></table></figure>
+<p>写加锁和写解锁</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">m.Lock()</span><br><span class="line">m.Unlock()</span><br></pre></td></tr></table></figure>
+<p>读写锁拥有以下特点：</p>
+<ol>
+<li>并发读；可以同时加多个读锁</li>
+<li>互斥写；写逻辑互斥，在任何一个时间点都一个协程获取到写锁。</li>
+<li>读写互斥；当写锁加锁成功时，获取读锁的协程休眠，等待写锁释放。 当存在读加锁时，获取写锁的协程休眠，等待所有读锁释放。</li>
+</ol>
+<p>来看一个完整的case：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">"sync"</span></span><br><span class="line">    <span class="string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> m *sync.RWMutex</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    m = <span class="built_in">new</span>(sync.RWMutex)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">go</span> read(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">go</span> write(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">go</span> read(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    time.Sleep(<span class="number">2</span>*time.Second)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">read</span><span class="params">(i <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">"read start"</span>)</span><br><span class="line"></span><br><span class="line">    m.RLock()</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">"reading"</span>)</span><br><span class="line">    time.Sleep(<span class="number">1</span>*time.Second)</span><br><span class="line">    m.RUnlock()    </span><br><span class="line"></span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">"read over"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">write</span><span class="params">(i <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">"write start"</span>)</span><br><span class="line"></span><br><span class="line">    m.Lock()</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">"writing"</span>)</span><br><span class="line">    time.Sleep(<span class="number">1</span>*time.Second)</span><br><span class="line">    m.Unlock()</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">"write over"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="原理剖析"><a href="#原理剖析" class="headerlink" title="原理剖析"></a>原理剖析</h1><h2 id="整体结构"><a href="#整体结构" class="headerlink" title="整体结构"></a>整体结构</h2><p>互斥源码所在位置：go/src/sync/rwmutex.go， RWMutex结构如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> RWMutex <span class="keyword">struct</span> &#123;</span><br><span class="line">	w           Mutex  <span class="comment">// 互斥锁</span></span><br><span class="line">	writerSem   <span class="keyword">uint32</span> <span class="comment">// 写锁信号</span></span><br><span class="line">	readerSem   <span class="keyword">uint32</span> <span class="comment">// 读锁信号（当写锁加上时，所有获取读锁的goutinue都会监听该信号，进行休眠等待。 写锁释放时，唤醒所有监听该信号的goroutinue）</span></span><br><span class="line">	readerCount <span class="keyword">int32</span>  <span class="comment">// 获取到读锁的数量</span></span><br><span class="line">	readerWait  <span class="keyword">int32</span>  <span class="comment">// 等待释放读锁的数量</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="写锁"><a href="#写锁" class="headerlink" title="写锁"></a>写锁</h2><h3 id="写锁加锁"><a href="#写锁加锁" class="headerlink" title="写锁加锁"></a>写锁加锁</h3><p>写锁加锁逻辑：</p>
+<ol>
+<li><p>获取读写锁的读锁数量，将读锁数量置为一个负数，准确值是：readerCount-rwmutexMaxReaders</p>
+</li>
+<li><p>如果读锁数量不为0，更新readerWait字段，将当前协程（获取写锁的线程）进行休眠，监听writerSem信号，等待所有读锁数量释放。</p>
+</li>
+</ol>
+<p>在读锁解锁逻辑里面，我们可以看到readerWait为0时，发出writerSem信号，唤醒获取写锁的协程。</p>
+<p>代码如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span> <span class="title">Lock</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line">	rw.w.Lock()  <span class="comment">// 真实上锁，如果这里获取不到，在这里就会休眠。（见metux锁实现）</span></span><br><span class="line">	<span class="comment">// Announce to readers there is a pending writer.</span></span><br><span class="line">    r := atomic.AddInt32(&amp;rw.readerCount, -rwmutexMaxReaders) + rwmutexMaxReaders   <span class="comment">// 获取读锁数量，且将读锁数量置为一个负数，这里为什么要置为一个负数？见后续</span></span><br><span class="line">    </span><br><span class="line">	<span class="keyword">if</span> r != <span class="number">0</span> &amp;&amp; atomic.AddInt32(&amp;rw.readerWait, r) != <span class="number">0</span> &#123;  <span class="comment">// 如果读锁数量不为0， 将读锁数量累加到readerWait待释放读锁数量中，进行休眠（等待所有读锁数量释放，再进行后续操作）</span></span><br><span class="line">		runtime_SemacquireMutex(&amp;rw.writerSem, <span class="literal">false</span>, <span class="number">0</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123; <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">		race.Acquire(unsafe.Pointer(&amp;rw.readerSem))</span><br><span class="line">		race.Acquire(unsafe.Pointer(&amp;rw.writerSem))</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="写锁解锁"><a href="#写锁解锁" class="headerlink" title="写锁解锁"></a>写锁解锁</h3><p>写锁解锁逻辑：</p>
+<ol>
+<li>将读锁数量恢复正常，即负数-&gt;正数唤醒</li>
+<li>发出readerSem信号，唤醒所有监听该信号的协程</li>
+<li>执行解锁逻辑</li>
+</ol>
+<p>代码如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span> <span class="title">Unlock</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.Release(unsafe.Pointer(&amp;rw.readerSem))</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Announce to readers there is no active writer.</span></span><br><span class="line">    r := atomic.AddInt32(&amp;rw.readerCount, rwmutexMaxReaders)  <span class="comment">// 将读锁数量加上rwmutexMaxReaders，恢复正常数量，获取读锁数量</span></span><br><span class="line">    </span><br><span class="line">	<span class="keyword">if</span> r &gt;= rwmutexMaxReaders &#123;                         <span class="comment">// 读锁加锁数量如果大于最大读数量，抛出异常</span></span><br><span class="line">		race.Enable()</span><br><span class="line">		throw(<span class="string">"sync: Unlock of unlocked RWMutex"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="keyword">int</span>(r); i++ &#123;                       <span class="comment">// 唤醒所有等待读锁的goroutinue（一旦写锁加上后，所有获取读锁的操作都会休眠）</span></span><br><span class="line">		runtime_Semrelease(&amp;rw.readerSem, <span class="literal">false</span>, <span class="number">0</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Allow other writers to proceed.</span></span><br><span class="line">	rw.w.Unlock()                                       <span class="comment">// 真实解锁，这里会唤醒其他等待写锁的goroutinue（见metux锁实现）</span></span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="读锁"><a href="#读锁" class="headerlink" title="读锁"></a>读锁</h2><h3 id="读锁加锁"><a href="#读锁加锁" class="headerlink" title="读锁加锁"></a>读锁加锁</h3><p>读锁加锁逻辑：</p>
+<ol>
+<li>将读锁数量加一</li>
+<li>如果读锁数量为负数时，即存在获取写锁的操作，将当前goroutinue休眠，监听readerSem信号，等待写锁释放时唤醒</li>
+</ol>
+<p>代码如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span> <span class="title">RLock</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> atomic.AddInt32(&amp;rw.readerCount, <span class="number">1</span>) &lt; <span class="number">0</span> &#123;  <span class="comment">// 读锁数量+1，如果读锁数量为负(某个routinue获取写锁，后面所有读锁只能休眠，等待写锁的完成)，休眠当前gouroutinue</span></span><br><span class="line">		runtime_SemacquireMutex(&amp;rw.readerSem, <span class="literal">false</span>, <span class="number">0</span>) <span class="comment">// 这里readerSem 数量为自增1</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">		race.Acquire(unsafe.Pointer(&amp;rw.readerSem))</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="读锁解锁"><a href="#读锁解锁" class="headerlink" title="读锁解锁"></a>读锁解锁</h3><p>读锁写锁逻辑：</p>
+<ol>
+<li>将读锁数量减一</li>
+<li>读锁数量为负数，即当前存在获取写锁的goroutinue逻辑，将readerWait减一。</li>
+<li>readerWait == 0 即：获取所有人都释放读锁，发出writerSem信号，唤醒获取写锁的goroutinue。</li>
+</ol>
+<p>代码如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span> <span class="title">RUnlock</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123; <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.ReleaseMerge(unsafe.Pointer(&amp;rw.writerSem))</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> r := atomic.AddInt32(&amp;rw.readerCount, <span class="number">-1</span>); r &lt; <span class="number">0</span> &#123;   <span class="comment">// 读锁数量-1；小于0情况有两种，1.为加读锁，直接解锁。2. 某个线程将要获取写锁</span></span><br><span class="line">		rw.rUnlockSlow(r)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123; <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span> <span class="title">rUnlockSlow</span><span class="params">(r <span class="keyword">int32</span>)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> r+<span class="number">1</span> == <span class="number">0</span> || r+<span class="number">1</span> == -rwmutexMaxReaders &#123;   <span class="comment">// 如果r+1 == 0, 即r == -1, 未加读锁，直接解锁。 异常</span></span><br><span class="line">		race.Enable()                            <span class="comment">// 如果r+1 == -rwmutexMaxReaders， 即r == -(rwmutexMaxReaders+1)，这里就算是某个goroutinue将要获取写锁，将readerCount 置为 readerCount-rwmutexMaxReaders，这个数字也不会小于-rwmutexMaxReaders 异常</span></span><br><span class="line">		throw(<span class="string">"sync: RUnlock of unlocked RWMutex"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// A writer is pending.</span></span><br><span class="line">	<span class="keyword">if</span> atomic.AddInt32(&amp;rw.readerWait, <span class="number">-1</span>) == <span class="number">0</span> &#123;   <span class="comment">// 某个goroutinue将要获取写锁，这里如果readerWait == 0，即 所有读锁全部解锁了，唤醒获取写锁的goroutinue</span></span><br><span class="line">		<span class="comment">// The last reader unblocks the writer.</span></span><br><span class="line">		runtime_Semrelease(&amp;rw.writerSem, <span class="literal">false</span>, <span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+      
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/mutex/" rel="tag"># mutex</a>
+          
+            <a href="/tags/RWmutex/" rel="tag"># RWmutex</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/05/18/go-源码研读-sync_map/" rel="next" title="go-源码研读-sync_map">
+                <i class="fa fa-chevron-left"></i> go-源码研读-sync_map
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/06/13/others-chrome-unsafe/" rel="prev" title="chrome_unsafe">
+                chrome_unsafe <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+  
+  <p class="site-author-name" itemprop="name">SVz</p>
+  <div class="site-description motion-element" itemprop="description">一个在折腾与被折腾之间的程序猿</div>
+</div>
+
+
+  <nav class="site-state motion-element">
+    
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">129</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span>
+        </a>
+      </div>
+    
+
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">标签</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
+          
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#背景介绍"><span class="nav-number">1.</span> <span class="nav-text">背景介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#常见用法"><span class="nav-number">2.</span> <span class="nav-text">常见用法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#原理剖析"><span class="nav-number">3.</span> <span class="nav-text">原理剖析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#整体结构"><span class="nav-number">3.1.</span> <span class="nav-text">整体结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#写锁"><span class="nav-number">3.2.</span> <span class="nav-text">写锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#写锁加锁"><span class="nav-number">3.2.1.</span> <span class="nav-text">写锁加锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#写锁解锁"><span class="nav-number">3.2.2.</span> <span class="nav-text">写锁解锁</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#读锁"><span class="nav-number">3.3.</span> <span class="nav-text">读锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#读锁加锁"><span class="nav-number">3.3.1.</span> <span class="nav-text">读锁加锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#读锁解锁"><span class="nav-number">3.3.2.</span> <span class="nav-text">读锁解锁</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">SVz</span>
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+    
+    <span title="站点总字数">408k</span>
+  
+
+  
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    
+    <span title="站点阅读时长">6:11</span>
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.2.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/schemes/muse.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+  
+
+  
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+// GET RESPONSIVE HEIGHT PASSED FROM IFRAME
+
+window.addEventListener("message", function(e) {
+  var data = e.data;
+  if ((typeof data === 'string') && (data.indexOf('ciu_embed') > -1)) {
+    var featureID = data.split(':')[1];
+    var height = data.split(':')[2];
+    $(`iframe[data-feature=${featureID}]`).height(parseInt(height) + 30);
+  }
+}, false);
+</script>
+
+
+
+
+
+
+
+
+  
+
+</body>
+</html>
