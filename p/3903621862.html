@@ -1,0 +1,376 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>go-asm-基础 | SHIELD</title><meta name="author" content="SVz"><meta name="copyright" content="SVz"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="了解底层才能理解程序的运作方式，哪怕只懂一点点汇编，也便于更好地理解计算机底层原理。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="go-asm-基础">
+<meta property="og:url" content="https://www.svz.life/p/3903621862.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="了解底层才能理解程序的运作方式，哪怕只懂一点点汇编，也便于更好地理解计算机底层原理。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.svz.life/images/favicon.ico">
+<meta property="article:published_time" content="2021-09-21T21:15:05.000Z">
+<meta property="article:modified_time" content="2021-09-21T21:15:05.000Z">
+<meta property="article:author" content="SVz">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.svz.life/images/favicon.ico"><link rel="shortcut icon" href="/images/favicon.ico"><link rel="canonical" href="https://www.svz.life/p/3903621862.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'mediumZoom',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'go-asm-基础',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-09-21 21:15:05'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = url => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      link.onload = () => resolve()
+      link.onerror = () => reject()
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+
+if (false) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/images/favicon.ico" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">136</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">33</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background: linear-gradient(20deg, #0062be, #925696, #cc426e, #fb0347)"><nav id="nav"><span id="blog-info"><a href="/" title="SHIELD"><img class="site-icon" src="/images/favicon.ico"/><span class="site-name">SHIELD</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">go-asm-基础</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-09-21T21:15:05.000Z" title="发表于 2021-09-21 21:15:05">2021-09-21</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-09-21T21:15:05.000Z" title="更新于 2021-09-21 21:15:05">2021-09-21</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Go/">Go</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Go/asm/">asm</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">3.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>14分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="go-asm-基础"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>了解底层才能理解程序的运作方式，哪怕只懂一点点汇编，也便于更好地理解计算机底层原理。</p>
+<span id="more"></span>
+<h1 id="基础"><a href="#基础" class="headerlink" title="基础"></a>基础</h1><h2 id="程序的编译阶段"><a href="#程序的编译阶段" class="headerlink" title="程序的编译阶段"></a>程序的编译阶段</h2><p>从源码到最终可执行文件的整体流程如下：</p>
+<p>源程序-&gt;编译预处理-&gt;编译-&gt;汇编-&gt;链接-&gt;可执行文件。</p>
+<h2 id="编译器"><a href="#编译器" class="headerlink" title="编译器"></a>编译器</h2><p>编译器即编译这一步干活的程序。</p>
+<p>编译器粗略分为</p>
+<p>词法分析，语法分析，类型检查，中间代码生成，代码优化，目标代码生成，目标代码优化。</p>
+<p>以 中间代码生成 区分为前端/后端</p>
+<h2 id="指令集"><a href="#指令集" class="headerlink" title="指令集"></a>指令集</h2><p>目前市面上存在两种指令集架构类型:</p>
+<ol>
+<li><strong>Reduced Instruction Set Computing (RISC) 精简指令集，比如ARM,MIPS等</strong></li>
+<li><strong>Complex Instruction Set Computing (CISC) 复杂指令集，比如Intel的X86及优化指令集SSE/AVX等</strong></li>
+</ol>
+<p>linux 可以 <code>cat /proc/cpuinfo</code>查看支持指令集</p>
+<p>macos 可以 <code>sysctl machdep.cpu</code>查看支持指令集</p>
+<p>go也可以通过cpu.X86查看X86当前支持的指令集</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	_ <span class="string">&quot;unsafe&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> CacheLinePad <span class="keyword">struct</span>&#123; _ [<span class="number">64</span>]<span class="type">byte</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Set <span class="keyword">struct</span> &#123;</span><br><span class="line">	_            CacheLinePad</span><br><span class="line">	HasAES       <span class="type">bool</span></span><br><span class="line">	HasADX       <span class="type">bool</span></span><br><span class="line">	HasAVX       <span class="type">bool</span></span><br><span class="line">	HasAVX2      <span class="type">bool</span></span><br><span class="line">	HasBMI1      <span class="type">bool</span></span><br><span class="line">	HasBMI2      <span class="type">bool</span></span><br><span class="line">	HasERMS      <span class="type">bool</span></span><br><span class="line">	HasFMA       <span class="type">bool</span></span><br><span class="line">	HasOSXSAVE   <span class="type">bool</span></span><br><span class="line">	HasPCLMULQDQ <span class="type">bool</span></span><br><span class="line">	HasPOPCNT    <span class="type">bool</span></span><br><span class="line">	HasSSE2      <span class="type">bool</span></span><br><span class="line">	HasSSE3      <span class="type">bool</span></span><br><span class="line">	HasSSSE3     <span class="type">bool</span></span><br><span class="line">	HasSSE41     <span class="type">bool</span></span><br><span class="line">	HasSSE42     <span class="type">bool</span></span><br><span class="line">	_            CacheLinePad</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//go:linkname X86 internal/cpu.X86</span></span><br><span class="line"><span class="keyword">var</span> X86 Set</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	fmt.Println(X86)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Go汇编语言并没有支持全部的CPU指令。<br>完整的X86指令定义看<a target="_blank" rel="noopener" href="https://github.com/golang/arch/blob/master/x86/x86.csv">这里</a>。<br>同时Go汇编还正对一些指令定义了别名，具体可以参考<a target="_blank" rel="noopener" href="https://golang.org/src/cmd/internal/obj/x86/anames.go">这里</a>。</p>
+<h2 id="寄存器"><a href="#寄存器" class="headerlink" title="寄存器"></a>寄存器</h2><h3 id="通用寄存器"><a href="#通用寄存器" class="headerlink" title="通用寄存器"></a>通用寄存器</h3><p>rax(al,ah,ax,eax)，rbx,rcx,rdx,rdi,rsi,r8-r15</p>
+<p>Go汇编精简为</p>
+<p>AX,BX,CX…..</p>
+<h3 id="指针寄存器"><a href="#指针寄存器" class="headerlink" title="指针寄存器"></a>指针寄存器</h3><p>bp:指向栈底</p>
+<p>sp:指向栈顶</p>
+<h3 id="段寄存器"><a href="#段寄存器" class="headerlink" title="段寄存器"></a>段寄存器</h3><p>cs——代码段寄存器(Code Segment Register)，其值为代码段的段值</p>
+<p>ds——数据段寄存器(Data Segment Register)，其值为数据段的段值</p>
+<p>es——附加段寄存器(Extra Segment Register)，其值为附加数据段的段值</p>
+<p>ss——堆栈段寄存器(Stack Segment Register)，其值为堆栈段的段值</p>
+<p>fs——附加段寄存器(Extra Segment Register)，其值为附加数据段的段值</p>
+<p>gs——附加段寄存器(Extra Segment Register)，其值为附加数据段的段值</p>
+<h3 id="指令指针寄存器"><a href="#指令指针寄存器" class="headerlink" title="指令指针寄存器"></a>指令指针寄存器</h3><p>rip: instruction pointer指令指针寄存器</p>
+<p>cs:ip 一般也称为PC(programme counter程序计数器),指向下一条要执行的指令</p>
+<h3 id="伪寄存器"><a href="#伪寄存器" class="headerlink" title="伪寄存器"></a>伪寄存器</h3><p> Go汇编为了简化汇编代码的编写，工具链维持出来了<code>FP、PC、SB、SP四个伪寄存器</code>。</p>
+<ol>
+<li>FP: frame pointer, 帧指针,参数和局部变量</li>
+<li>PC: program counter: 程序计数器,跳转和分支</li>
+<li>SB: static base pointer: 静态基址指针,全局符号</li>
+<li>SP: stack pointer: 栈指针,栈的顶端</li>
+</ol>
+<p>FP:寄存器指向函数参数。0(FP)是第一个参数，8(FP)是第二个参数(64-bit machine). first_arg+0(FP)表示把第一个参数地址绑定到符号 first_arg, 这个与SB的含义不同。</p>
+<p>PC:程序计数器，指下一步要执行的程序，伪寄存器PC和硬件寄存器PC作用差不多。</p>
+<p>SB:寄存器表示全局内存起点，foo(SB) 表示 符号foo作为内存地址使用。这种形式用于命名 全局函数，数据。&lt;&gt;限制符号只能在当前源文件使用，类似 C 中的 static。foo+4(SB)表示foo 往后 4字节的地址。</p>
+<p>SP:寄存器表示栈指针，指向当前栈顶， 所以 offset 都是负数，范围在 [ -framesize, 0 ), 例如 x-8(SP). 对于硬件寄存器名称为SP的架构，x-8(SP) 表示虚拟栈指针寄存器(实际上是当前栈帧的 BP 位置)， -8(SP) 表示硬件 SP 寄存器(与虚拟SP相隔当前栈帧大小).<strong>如果使用SP时有一个临时标识符前缀就是伪SP，否则就是真SP寄存器,所有生成的汇编代码都是真实SP寄存器，与手写汇编不一致</strong></p>
+<p>下方给个参考图示，1.17后会有区别见下方调用规约相关。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">高地址位</span><br><span class="line">          ┼───────────┼</span><br><span class="line">          │  返回值2   │</span><br><span class="line">          ┼───────────┼</span><br><span class="line">          │  返回值1   │</span><br><span class="line">          ┼───────────┼</span><br><span class="line">          │  参数值2   │</span><br><span class="line">          ┼───────────┼</span><br><span class="line">          │  参数值1   │</span><br><span class="line">          ┼───────────┼    &lt;-- 伪FP</span><br><span class="line">          │ 函数返回地址│</span><br><span class="line">          ┼───────────┼</span><br><span class="line">          │ CALLER BP │</span><br><span class="line">          ┼───────────┼    &lt;-- 伪SP(BP)</span><br><span class="line">          │  变量值m   │    </span><br><span class="line">          ┼───────────┼    &lt;-- m-8(SP)</span><br><span class="line">          │  变量值n   │    </span><br><span class="line">          ┼───────────┼    &lt;-- 硬件SP &lt;-- n-16(SP)</span><br><span class="line">低地址位</span><br></pre></td></tr></table></figure>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><p>其他寄存器,比如cf,xmm等可以自己查看相关文献</p>
+<h2 id="汇编风格比较"><a href="#汇编风格比较" class="headerlink" title="汇编风格比较"></a>汇编风格比较</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Intel</th>
+<th style="text-align:left">AT&amp;T</th>
+<th style="text-align:left">Go</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>mov eax, 1</code></td>
+<td style="text-align:left"><code>movl $1, %eax</code></td>
+<td style="text-align:left"><code>MOVQ $1, AX</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>mov rbx, 0ffh</code></td>
+<td style="text-align:left"><code>movl $0xff, %rbx</code></td>
+<td style="text-align:left"><code>MOVQ $0xff, BX</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>mov ecx, [ebx+3]</code></td>
+<td style="text-align:left"><code>movl 3(%ebx), %ecx</code></td>
+<td style="text-align:left"><code>MOVQ 2(BX), CX</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>整体风格与AT&amp;T类似</p>
+<ol>
+<li>以$符号表示常量，但是寄存器并没有%前缀</li>
+<li>以命令来区分操作长度比如 MOVB MOVW MOVL MOVQ</li>
+</ol>
+<p>Go汇编命令绝大大多与AT&amp;T一致 <code>op src dst</code>，比如 <code>MOVQ $1, AX</code> 表示把1赋值给AX，也有一部分是不一样的，比如CMP相关</p>
+<h2 id="程序段-section"><a href="#程序段-section" class="headerlink" title="程序段(section)"></a>程序段(section)</h2><p>程序编译以后会分为不同的段，一般来说会分为</p>
+<ol>
+<li>.text 代码段 存放程序代码,通常是只读的</li>
+<li>.data 数据段 存放初始化了的全局变量和初始化了的静态变量</li>
+<li>.bss 全局变量段 存放未初始化的全局变量和未初始化的静态变量</li>
+</ol>
+<p>名字都是历史定的，也没啥特殊硬记就完事。主要就是把数据按照不同的分类放在一起。也就是说可以自定义段信息来区分，能找到对应的数据就行。</p>
+<h1 id="Go汇编基础语法"><a href="#Go汇编基础语法" class="headerlink" title="Go汇编基础语法"></a>Go汇编基础语法</h1><p><code>symbol</code>为变量在汇编语言中对应的标识符,当前包中Go语言定义的符号<code>symbol</code>，在汇编代码中对应<code>·symbol</code>,在符号后的&lt;&gt;作用是限制数据在当前文件使用。</p>
+<p><code>offset</code>是符号开始地址的偏移量</p>
+<p><code>width</code>是要初始化内存的宽度大小</p>
+<p><code>value</code>是要初始化的值</p>
+<p><code>(SB)</code>表示符号相对于<code>SB伪寄存器</code>的偏移量，二者组合在一起最终是绝对地址</p>
+<h2 id="DATA-用于初始化包变量"><a href="#DATA-用于初始化包变量" class="headerlink" title="DATA:用于初始化包变量"></a>DATA:用于初始化包变量</h2><p>语法为: <code>DATA symbol+offset(SB)/width, value</code></p>
+<h2 id="GLOBL-用于将符号导出"><a href="#GLOBL-用于将符号导出" class="headerlink" title="GLOBL:用于将符号导出"></a>GLOBL:用于将符号导出</h2><p>语法为: <code>GLOBL symbol(SB), width</code></p>
+<h2 id="TEXT-用于定义符号-一般就是函数"><a href="#TEXT-用于定义符号-一般就是函数" class="headerlink" title="TEXT:用于定义符号(一般就是函数)"></a>TEXT:用于定义符号(一般就是函数)</h2><p>语法为: <code>TEXT symbol(SB), [flags,] $framesize[-argsize]</code></p>
+<p>其中函数名(symbol)中当前包的路径可以省略</p>
+<p><code>flags</code>用于指示函数的一些特殊行为，标志在<a target="_blank" rel="noopener" href="https://github.com/golang/go/blob/master/src/runtime/textflag.h">textlags.h</a>文件中定义，常见的<code>NOSPLIT</code>主要用于标记函数不进行栈分裂。</p>
+<p><code>framesize</code>表示栈帧大小，其中包含局部变量+调用其它函数时准备调用参数的隐式栈空间。</p>
+<p><code>argsize</code>参数及返回值大小，之所以可以省略是因为编译器可以从Go语言的函数声明中推导出函数参数的大小。</p>
+<h2 id="PCDATA和FUNCDATA"><a href="#PCDATA和FUNCDATA" class="headerlink" title="*PCDATA和FUNCDATA"></a>*PCDATA和FUNCDATA</h2><blockquote>
+<p>Go里有一个函数叫做<code>runtime.Caller</code>,可以获取当前的PC寄存器值，以及文件和行号。然后根据PC寄存器表示的指令位置，通过<code>runtime.FuncForPC</code>函数获取函数的基本信息，这种功能是如何实现的？</p>
+<p>Go语言作为一门静态编译型语言，在执行时每个函数的地址都是固定的，函数的每条指令也是固定的。如果针对每个函数和函数的每个指令生成一个地址表格（也叫PC表格），那么在运行时我们就可以根据PC寄存器的值轻松查询到指令当时对应的函数和位置信息。而Go语言也是采用类似的策略，只不过地址表格经过裁剪，舍弃了不必要的信息。因为要在运行时获取任意一个地址的位置，必然是要有一个函数调用，因此我们只需要为函数的开始和结束位置，以及每个函数调用位置生成地址表格就可以了。同时地址是有大小顺序的，在排序后可以通过只记录增量来减少数据的大小；在查询时可以通过二分法加快查找的速度。</p>
+</blockquote>
+<p>这两命令就是标记地址表格和函数表格的指令</p>
+<p>两者语法也一致,语法为: <code>PCDATA/FUNCDATA tableid, tableoffset</code></p>
+<p><code>tableid</code>: 表格的类型</p>
+<p>​    PCDATA有两种类型<code>PCDATA_StackMapIndex</code>,<code>PCDATA_InlTreeIndex</code>,两种类型类似，后者为内联函数的表格</p>
+<p>​    FUNCDATA有3种类型</p>
+<pre><code> 1. `FUNCDATA_ArgsPointerMaps`: 函数参数的指针信息表
+ 2. `FUNCDATA_LocalsPointerMaps`: 局部指针信息表
+ 3. `FUNCDATA_InlTree`: 被内联展开的指针信息表
+</code></pre><p><code>tableoffset</code>: 表格的地址</p>
+<p>通过FUNC表格，Go语言的垃圾回收器可以跟踪全部指针的生命周期，同时根据指针指向的地址是否在被移动的栈范围来确定是否要进行指针移动。</p>
+<p>一般来说都是由编译器自动生成，手动实现不太现实</p>
+<h1 id="手写汇编"><a href="#手写汇编" class="headerlink" title="手写汇编"></a>手写汇编</h1><p>一般来说，就看下汇编生成就行了，手写汇编意义不大，当然，真想写也不是不行。。。</p>
+<h3 id="简单计算"><a href="#简单计算" class="headerlink" title="简单计算"></a>简单计算</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//add.s</span></span><br><span class="line">TEXT ·Add(SB), $<span class="number">0</span><span class="number">-24</span></span><br><span class="line">    MOVQ a+<span class="number">0</span>(FP), AX</span><br><span class="line">    MOVQ b+<span class="number">8</span>(FP), BX</span><br><span class="line">    ADDQ BX,AX</span><br><span class="line">    MOVQ AX,ret+<span class="number">16</span>(FP)</span><br><span class="line">    RET</span><br><span class="line"></span><br><span class="line">TEXT ·Neg(SB), $<span class="number">0</span></span><br><span class="line">    MOVQ     x+<span class="number">0</span>(FP), AX</span><br><span class="line">    NEGQ     AX</span><br><span class="line">    MOVQ     AX, ret+<span class="number">8</span>(FP)</span><br><span class="line">    RET</span><br><span class="line"><span class="comment">//add.go</span></span><br><span class="line"><span class="keyword">package</span> add</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Add</span><span class="params">(a <span class="type">int64</span>, b <span class="type">int64</span>)</span></span> <span class="type">int64</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Neg</span><span class="params">(x <span class="type">uint64</span>)</span></span> <span class="type">int64</span></span><br></pre></td></tr></table></figure>
+<h3 id="变量定义"><a href="#变量定义" class="headerlink" title="变量定义"></a>变量定义</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//a.s</span></span><br><span class="line">GLOBL str(SB),RODATA,$<span class="number">17</span></span><br><span class="line">DATA  str+<span class="number">0x00</span>(SB)/<span class="number">8</span>, $<span class="string">&quot;aaaaaaaa&quot;</span></span><br><span class="line">DATA  str+<span class="number">0x08</span>(SB)/<span class="number">8</span>, $<span class="string">&quot;bbbbcccc&quot;</span></span><br><span class="line">DATA  str+<span class="number">0x10</span>(SB)/<span class="number">1</span>, $<span class="number">0x0a</span></span><br><span class="line"></span><br><span class="line">GLOBL ·foo(SB), RODATA, $<span class="number">16</span></span><br><span class="line">DATA  ·foo+<span class="number">0</span>(SB)/<span class="number">8</span>,$str(SB)</span><br><span class="line">DATA  ·foo+<span class="number">8</span>(SB)/<span class="number">8</span>,$<span class="number">24</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//a.go</span></span><br><span class="line"><span class="keyword">package</span> a</span><br><span class="line"><span class="keyword">var</span> foo <span class="type">string</span></span><br></pre></td></tr></table></figure>
+<h3 id="获取goid"><a href="#获取goid" class="headerlink" title="获取goid"></a>获取goid</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//goid.s</span></span><br><span class="line">#include <span class="string">&quot;textflag.h&quot;</span></span><br><span class="line"></span><br><span class="line">TEXT ·GetGoID(SB),NOSPLIT,$<span class="number">0</span><span class="number">-8</span></span><br><span class="line">    MOVQ (TLS),AX</span><br><span class="line">    MOVQ ·offset(SB),BX</span><br><span class="line">    MOVQ (AX)(BX*<span class="number">1</span>),CX</span><br><span class="line">    MOVQ CX,g+<span class="number">0</span>(FP)</span><br><span class="line">    RET</span><br><span class="line"></span><br><span class="line"><span class="comment">//goid.go</span></span><br><span class="line"><span class="keyword">package</span> goid</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> offset = <span class="number">152</span> <span class="comment">//go1.16</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">GetGoID</span><span class="params">()</span></span> <span class="type">int</span></span><br></pre></td></tr></table></figure>
+<h3 id="系统调用"><a href="#系统调用" class="headerlink" title="系统调用"></a>系统调用</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//a.s</span></span><br><span class="line">TEXT ·helloWorld(SB), NOSPLIT, $<span class="number">0</span></span><br><span class="line">    MOVL     $(<span class="number">0x2000000</span>+<span class="number">4</span>), AX     <span class="comment">// syscall write</span></span><br><span class="line">    MOVQ     $<span class="number">1</span>, DI             <span class="comment">// arg 1 fd</span></span><br><span class="line">    LEAQ     str(SB), SI         <span class="comment">// arg 2 buf</span></span><br><span class="line">    MOVL     $<span class="number">24</span>, DX         <span class="comment">// arg 3 count</span></span><br><span class="line">    SYSCALL</span><br><span class="line">    RET</span><br><span class="line"><span class="comment">//a.go</span></span><br><span class="line"><span class="keyword">package</span> hello</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">helloWorld</span><span class="params">()</span></span></span><br></pre></td></tr></table></figure>
+<h1 id="函数调用规约"><a href="#函数调用规约" class="headerlink" title="函数调用规约"></a>函数调用规约</h1><p>传统的调用规约中，一般会区分为</p>
+<ol>
+<li>caller saved registers 调用方保存现场 </li>
+<li>callee saved registers 被调方保存现场</li>
+</ol>
+<h2 id="1-16及以前"><a href="#1-16及以前" class="headerlink" title="1.16及以前"></a>1.16及以前</h2><p>要求所有参数和返回值都通过从右至左压栈来传递</p>
+<p>看一个示例</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">add</span><span class="params">(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 <span class="type">int</span>)</span></span> (r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 <span class="type">int</span>) &#123;</span><br><span class="line">	<span class="keyword">return</span> a11, a10, a9, a8, a7, a6, a5, a4, a3, a2, a1</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">&quot;&quot;.add STEXT nosplit size=132 args=0xb0 locals=0x0 funcid=0x0</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:4)	TEXT	&quot;&quot;.add(SB), NOSPLIT|ABIInternal, $0-176</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:4)	FUNCDATA	$0, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:4)	FUNCDATA	$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:5)	MOVQ	&quot;&quot;.a11+88(SP), AX</span></span><br><span class="line"><span class="comment">	0x0005 00005 (test.go:5)	MOVQ	AX, &quot;&quot;.r1+96(SP)</span></span><br><span class="line"><span class="comment">	0x000a 00010 (test.go:5)	MOVQ	&quot;&quot;.a10+80(SP), AX</span></span><br><span class="line"><span class="comment">	0x000f 00015 (test.go:5)	MOVQ	AX, &quot;&quot;.r2+104(SP)</span></span><br><span class="line"><span class="comment">	0x0014 00020 (test.go:5)	MOVQ	&quot;&quot;.a9+72(SP), AX</span></span><br><span class="line"><span class="comment">	0x0019 00025 (test.go:5)	MOVQ	AX, &quot;&quot;.r3+112(SP)</span></span><br><span class="line"><span class="comment">	0x001e 00030 (test.go:5)	MOVQ	&quot;&quot;.a8+64(SP), AX</span></span><br><span class="line"><span class="comment">	0x0023 00035 (test.go:5)	MOVQ	AX, &quot;&quot;.r4+120(SP)</span></span><br><span class="line"><span class="comment">	0x0028 00040 (test.go:5)	MOVQ	&quot;&quot;.a7+56(SP), AX</span></span><br><span class="line"><span class="comment">	0x002d 00045 (test.go:5)	MOVQ	AX, &quot;&quot;.r5+128(SP)</span></span><br><span class="line"><span class="comment">	0x0035 00053 (test.go:5)	MOVQ	&quot;&quot;.a6+48(SP), AX</span></span><br><span class="line"><span class="comment">	0x003a 00058 (test.go:5)	MOVQ	AX, &quot;&quot;.r6+136(SP)</span></span><br><span class="line"><span class="comment">	0x0042 00066 (test.go:5)	MOVQ	&quot;&quot;.a5+40(SP), AX</span></span><br><span class="line"><span class="comment">	0x0047 00071 (test.go:5)	MOVQ	AX, &quot;&quot;.r7+144(SP)</span></span><br><span class="line"><span class="comment">	0x004f 00079 (test.go:5)	MOVQ	&quot;&quot;.a4+32(SP), AX</span></span><br><span class="line"><span class="comment">	0x0054 00084 (test.go:5)	MOVQ	AX, &quot;&quot;.r8+152(SP)</span></span><br><span class="line"><span class="comment">	0x005c 00092 (test.go:5)	MOVQ	&quot;&quot;.a3+24(SP), AX</span></span><br><span class="line"><span class="comment">	0x0061 00097 (test.go:5)	MOVQ	AX, &quot;&quot;.r9+160(SP)</span></span><br><span class="line"><span class="comment">	0x0069 00105 (test.go:5)	MOVQ	&quot;&quot;.a2+16(SP), AX</span></span><br><span class="line"><span class="comment">	0x006e 00110 (test.go:5)	MOVQ	AX, &quot;&quot;.r10+168(SP)</span></span><br><span class="line"><span class="comment">	0x0076 00118 (test.go:5)	MOVQ	&quot;&quot;.a1+8(SP), AX</span></span><br><span class="line"><span class="comment">	0x007b 00123 (test.go:5)	MOVQ	AX, &quot;&quot;.r11+176(SP)</span></span><br><span class="line"><span class="comment">	0x0083 00131 (test.go:5)	RET</span></span><br><span class="line"><span class="comment">	0x0000 48 8b 44 24 58 48 89 44 24 60 48 8b 44 24 50 48  H.D$XH.D$`H.D$PH</span></span><br><span class="line"><span class="comment">	0x0010 89 44 24 68 48 8b 44 24 48 48 89 44 24 70 48 8b  .D$hH.D$HH.D$pH.</span></span><br><span class="line"><span class="comment">	0x0020 44 24 40 48 89 44 24 78 48 8b 44 24 38 48 89 84  D$@H.D$xH.D$8H..</span></span><br><span class="line"><span class="comment">	0x0030 24 80 00 00 00 48 8b 44 24 30 48 89 84 24 88 00  $....H.D$0H..$..</span></span><br><span class="line"><span class="comment">	0x0040 00 00 48 8b 44 24 28 48 89 84 24 90 00 00 00 48  ..H.D$(H..$....H</span></span><br><span class="line"><span class="comment">	0x0050 8b 44 24 20 48 89 84 24 98 00 00 00 48 8b 44 24  .D$ H..$....H.D$</span></span><br><span class="line"><span class="comment">	0x0060 18 48 89 84 24 a0 00 00 00 48 8b 44 24 10 48 89  .H..$....H.D$.H.</span></span><br><span class="line"><span class="comment">	0x0070 84 24 a8 00 00 00 48 8b 44 24 08 48 89 84 24 b0  .$....H.D$.H..$.</span></span><br><span class="line"><span class="comment">	0x0080 00 00 00 c3                                      ....</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+<p>可以简单的看出来就是把a11-a1移动到了r1-r11上</p>
+<h2 id="1-17"><a href="#1-17" class="headerlink" title="1.17+"></a>1.17+</h2><p>改成caller saved registers,通过寄存器来调用，但是与c不一样的是，使用9个寄存器来进行交互，依次是 AX，BX，CX，DI，SI，R8，R9，R10，R11，超出部分还是通过栈来传递</p>
+<p>所以1.17在性能及内存使用上会提升很多</p>
+<p>同样看示例</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">add</span><span class="params">(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 <span class="type">int</span>)</span></span> (r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 <span class="type">int</span>) &#123;</span><br><span class="line">	<span class="keyword">return</span> a11, a10, a9, a8, a7, a6, a5, a4, a3, a2, a1</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">&quot;&quot;.add STEXT nosplit size=48 args=0x68 locals=0x0 funcid=0x0</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:4)	TEXT	&quot;&quot;.add(SB), NOSPLIT|ABIInternal, $0-104</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:4)	FUNCDATA	$0, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:4)	FUNCDATA	$1, gclocals·33cdeccccebe80329f1fdbee7f5874cb(SB)</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:4)	FUNCDATA	$5, &quot;&quot;.add.arginfo1(SB)</span></span><br><span class="line"><span class="comment">	0x0000 00000 (test.go:5)	MOVQ	BX, &quot;&quot;.r10+24(SP)</span></span><br><span class="line"><span class="comment">	0x0005 00005 (test.go:5)	MOVQ	AX, &quot;&quot;.r11+32(SP)</span></span><br><span class="line"><span class="comment">	0x000a 00010 (test.go:5)	MOVQ	&quot;&quot;.a11+16(SP), AX</span></span><br><span class="line"><span class="comment">	0x000f 00015 (test.go:5)	MOVQ	&quot;&quot;.a10+8(SP), BX</span></span><br><span class="line"><span class="comment">	0x0014 00020 (test.go:5)	MOVQ	CX, DX</span></span><br><span class="line"><span class="comment">	0x0017 00023 (test.go:5)	MOVQ	R11, CX</span></span><br><span class="line"><span class="comment">	0x001a 00026 (test.go:5)	MOVQ	DI, R12</span></span><br><span class="line"><span class="comment">	0x001d 00029 (test.go:5)	MOVQ	R10, DI</span></span><br><span class="line"><span class="comment">	0x0020 00032 (test.go:5)	MOVQ	SI, R13</span></span><br><span class="line"><span class="comment">	0x0023 00035 (test.go:5)	MOVQ	R9, SI</span></span><br><span class="line"><span class="comment">	0x0026 00038 (test.go:5)	MOVQ	R13, R9</span></span><br><span class="line"><span class="comment">	0x0029 00041 (test.go:5)	MOVQ	R12, R10</span></span><br><span class="line"><span class="comment">	0x002c 00044 (test.go:5)	MOVQ	DX, R11</span></span><br><span class="line"><span class="comment">	0x002f 00047 (test.go:5)	RET</span></span><br><span class="line"><span class="comment">	0x0000 48 89 5c 24 18 48 89 44 24 20 48 8b 44 24 10 48  H.\$.H.D$ H.D$.H</span></span><br><span class="line"><span class="comment">	0x0010 8b 5c 24 08 48 89 ca 4c 89 d9 49 89 fc 4c 89 d7  .\$.H..L..I..L..</span></span><br><span class="line"><span class="comment">	0x0020 49 89 f5 4c 89 ce 4d 89 e9 4d 89 e2 49 89 d3 c3  I..L..M..M..I...</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+<p>可以看到先将超出9个的BX(a2),AX(a1)移动到r10,r11上，然后交换对应的寄存器的值最后返回</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a target="_blank" rel="noopener" href="https://9p.io/sys/doc/asm.pdf">asm.pdf (9p.io)</a></p>
+<p><a target="_blank" rel="noopener" href="https://opensource.apple.com/source/xnu/xnu-1504.3.12/bsd/kern/syscalls.master">MacOS系统调用</a></p>
+<p><a target="_blank" rel="noopener" href="https://draveness.me/golang/docs/part1-prerequisite/ch02-compile/golang-compile-intro/">Go 语言设计与实现</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/binHome/p/13027712.html">GO汇编变量</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="https://www.svz.life">SVz</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://www.svz.life/p/3903621862.html">https://www.svz.life/p/3903621862.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://www.svz.life" target="_blank">SHIELD</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"></div><div class="post_share"><div class="social-share" data-image="/images/favicon.ico" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/p/402035249.html" title="wireshark不显示vxlan协议"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">wireshark不显示vxlan协议</div></div></a></div><div class="next-post pull-right"><a href="/p/2525441379.html" title="go-asm-反汇编"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">go-asm-反汇编</div></div></a></div></nav><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/images/favicon.ico" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">SVz</div><div class="author-info__description">一个在折腾与被折腾之间的程序猿</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">136</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">33</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/SVz777"><i class="fab fa-github"></i><span>关注我</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/SVz777" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:svz@svz.life" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">生活总是猝不及防。</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80"><span class="toc-number">1.</span> <span class="toc-text">基础</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A8%8B%E5%BA%8F%E7%9A%84%E7%BC%96%E8%AF%91%E9%98%B6%E6%AE%B5"><span class="toc-number">1.1.</span> <span class="toc-text">程序的编译阶段</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E5%99%A8"><span class="toc-number">1.2.</span> <span class="toc-text">编译器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%87%E4%BB%A4%E9%9B%86"><span class="toc-number">1.3.</span> <span class="toc-text">指令集</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.4.</span> <span class="toc-text">寄存器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%9A%E7%94%A8%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.4.1.</span> <span class="toc-text">通用寄存器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8C%87%E9%92%88%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.4.2.</span> <span class="toc-text">指针寄存器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AE%B5%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.4.3.</span> <span class="toc-text">段寄存器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8C%87%E4%BB%A4%E6%8C%87%E9%92%88%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.4.4.</span> <span class="toc-text">指令指针寄存器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%AA%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.4.5.</span> <span class="toc-text">伪寄存器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B6%E4%BB%96"><span class="toc-number">1.4.6.</span> <span class="toc-text">其他</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B1%87%E7%BC%96%E9%A3%8E%E6%A0%BC%E6%AF%94%E8%BE%83"><span class="toc-number">1.5.</span> <span class="toc-text">汇编风格比较</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A8%8B%E5%BA%8F%E6%AE%B5-section"><span class="toc-number">1.6.</span> <span class="toc-text">程序段(section)</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Go%E6%B1%87%E7%BC%96%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">Go汇编基础语法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#DATA-%E7%94%A8%E4%BA%8E%E5%88%9D%E5%A7%8B%E5%8C%96%E5%8C%85%E5%8F%98%E9%87%8F"><span class="toc-number">2.1.</span> <span class="toc-text">DATA:用于初始化包变量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#GLOBL-%E7%94%A8%E4%BA%8E%E5%B0%86%E7%AC%A6%E5%8F%B7%E5%AF%BC%E5%87%BA"><span class="toc-number">2.2.</span> <span class="toc-text">GLOBL:用于将符号导出</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TEXT-%E7%94%A8%E4%BA%8E%E5%AE%9A%E4%B9%89%E7%AC%A6%E5%8F%B7-%E4%B8%80%E8%88%AC%E5%B0%B1%E6%98%AF%E5%87%BD%E6%95%B0"><span class="toc-number">2.3.</span> <span class="toc-text">TEXT:用于定义符号(一般就是函数)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PCDATA%E5%92%8CFUNCDATA"><span class="toc-number">2.4.</span> <span class="toc-text">*PCDATA和FUNCDATA</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%89%8B%E5%86%99%E6%B1%87%E7%BC%96"><span class="toc-number">3.</span> <span class="toc-text">手写汇编</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E5%8D%95%E8%AE%A1%E7%AE%97"><span class="toc-number">3.0.1.</span> <span class="toc-text">简单计算</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E5%AE%9A%E4%B9%89"><span class="toc-number">3.0.2.</span> <span class="toc-text">变量定义</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96goid"><span class="toc-number">3.0.3.</span> <span class="toc-text">获取goid</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="toc-number">3.0.4.</span> <span class="toc-text">系统调用</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E8%A7%84%E7%BA%A6"><span class="toc-number">4.</span> <span class="toc-text">函数调用规约</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-16%E5%8F%8A%E4%BB%A5%E5%89%8D"><span class="toc-number">4.1.</span> <span class="toc-text">1.16及以前</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-17"><span class="toc-number">4.2.</span> <span class="toc-text">1.17+</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">5.</span> <span class="toc-text">参考</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/357679683.html" title="k8s安装">k8s安装</a><time datetime="2024-04-12T17:20:00.000Z" title="发表于 2024-04-12 17:20:00">2024-04-12</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/402035249.html" title="wireshark不显示vxlan协议">wireshark不显示vxlan协议</a><time datetime="2024-04-12T17:02:00.000Z" title="发表于 2024-04-12 17:02:00">2024-04-12</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/3903621862.html" title="go-asm-基础">go-asm-基础</a><time datetime="2021-09-21T21:15:05.000Z" title="发表于 2021-09-21 21:15:05">2021-09-21</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/2525441379.html" title="go-asm-反汇编">go-asm-反汇编</a><time datetime="2021-09-09T23:15:05.000Z" title="发表于 2021-09-09 23:15:05">2021-09-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/363974412.html" title="go-base-gomod">go-base-gomod</a><time datetime="2020-08-25T17:21:34.000Z" title="发表于 2020-08-25 17:21:34">2020-08-25</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2017 - 2024 By SVz</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn"><img class="icp-icon"/><span>鄂ICP备2022005628号-1</span></a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/medium-zoom/dist/medium-zoom.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script><script>function loadValine () {
+  function initValine () {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+      appKey: '1Qx8FFm1TFsG2XBlkjybkEUG',
+      avatar: 'monsterid',
+      serverURLs: '',
+      emojiMaps: "",
+      path: window.location.pathname,
+      visitor: false
+    }, null))
+  }
+
+  if (typeof Valine === 'function') initValine() 
+  else getScript('https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js').then(initValine)
+}
+
+if ('Valine' === 'Valine' || !true) {
+  if (true) btf.loadComment(document.getElementById('vcomment'),loadValine)
+  else setTimeout(loadValine, 0)
+} else {
+  function loadOtherComment () {
+    loadValine()
+  }
+}</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="true"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

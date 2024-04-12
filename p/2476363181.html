@@ -1,0 +1,291 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><title>go-源码研读-RWmutex | SHIELD</title><meta name="author" content="SVz"><meta name="copyright" content="SVz"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="背景介绍使用互斥锁，可以避免多个 Go 协程同时访问修改共享资源的代码。但是对于多个协程同时读的操作，没有修改共享资源，不需要添加互斥锁，互斥锁在这种场景下，会大幅度降低程序性能。 在这种场景下，我们真正需要具有读并发、互斥写、读写互斥等特点的逻辑，读写锁是其中的一种实现。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="go-源码研读-RWmutex">
+<meta property="og:url" content="https://www.svz.life/p/2476363181.html">
+<meta property="og:site_name" content="SHIELD">
+<meta property="og:description" content="背景介绍使用互斥锁，可以避免多个 Go 协程同时访问修改共享资源的代码。但是对于多个协程同时读的操作，没有修改共享资源，不需要添加互斥锁，互斥锁在这种场景下，会大幅度降低程序性能。 在这种场景下，我们真正需要具有读并发、互斥写、读写互斥等特点的逻辑，读写锁是其中的一种实现。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.svz.life/images/favicon.ico">
+<meta property="article:published_time" content="2020-05-18T11:14:11.000Z">
+<meta property="article:modified_time" content="2020-05-18T11:14:11.000Z">
+<meta property="article:author" content="SVz">
+<meta property="article:tag" content="mutex">
+<meta property="article:tag" content="RWmutex">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.svz.life/images/favicon.ico"><link rel="shortcut icon" href="/images/favicon.ico"><link rel="canonical" href="https://www.svz.life/p/2476363181.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"languages":{"hits_empty":"找不到您查询的内容：${query}"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'mediumZoom',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  }
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'go-源码研读-RWmutex',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2020-05-18 11:14:11'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = url => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      link.onload = () => resolve()
+      link.onerror = () => reject()
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>const preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',()=> { preloader.endLoading() })
+
+if (false) {
+  document.addEventListener('pjax:send', () => { preloader.initLoading() })
+  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
+}</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/images/favicon.ico" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">136</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">33</div></a></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background: linear-gradient(20deg, #0062be, #925696, #cc426e, #fb0347)"><nav id="nav"><span id="blog-info"><a href="/" title="SHIELD"><img class="site-icon" src="/images/favicon.ico"/><span class="site-name">SHIELD</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">go-源码研读-RWmutex</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2020-05-18T11:14:11.000Z" title="发表于 2020-05-18 11:14:11">2020-05-18</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2020-05-18T11:14:11.000Z" title="更新于 2020-05-18 11:14:11">2020-05-18</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Go/">Go</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Go/src/">src</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">字数总计:</span><span class="word-count">1.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>6分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="go-源码研读-RWmutex"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h1><p>使用互斥锁，可以避免多个 Go 协程同时访问修改共享资源的代码。但是对于多个协程同时读的操作，没有修改共享资源，不需要添加互斥锁，互斥锁在这种场景下，会大幅度降低程序性能。</p>
+<p>在这种场景下，我们真正需要具有读并发、互斥写、读写互斥等特点的逻辑，读写锁是其中的一种实现。</p>
+<span id="more"></span>
+<h1 id="常见用法"><a href="#常见用法" class="headerlink" title="常见用法"></a>常见用法</h1><p>声明一个读写锁</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> m *sync.RWMutex</span><br></pre></td></tr></table></figure>
+<p>读加锁和读解锁</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">m.RLock()</span><br><span class="line">m.RUnlock()</span><br></pre></td></tr></table></figure>
+<p>写加锁和写解锁</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">m.Lock()</span><br><span class="line">m.Unlock()</span><br></pre></td></tr></table></figure>
+<p>读写锁拥有以下特点：</p>
+<ol>
+<li>并发读；可以同时加多个读锁</li>
+<li>互斥写；写逻辑互斥，在任何一个时间点都一个协程获取到写锁。</li>
+<li>读写互斥；当写锁加锁成功时，获取读锁的协程休眠，等待写锁释放。 当存在读加锁时，获取写锁的协程休眠，等待所有读锁释放。</li>
+</ol>
+<p>来看一个完整的case：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">&quot;sync&quot;</span></span><br><span class="line">    <span class="string">&quot;time&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> m *sync.RWMutex</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    m = <span class="built_in">new</span>(sync.RWMutex)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">go</span> read(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">go</span> write(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">go</span> read(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    time.Sleep(<span class="number">2</span>*time.Second)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">read</span><span class="params">(i <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">&quot;read start&quot;</span>)</span><br><span class="line"></span><br><span class="line">    m.RLock()</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">&quot;reading&quot;</span>)</span><br><span class="line">    time.Sleep(<span class="number">1</span>*time.Second)</span><br><span class="line">    m.RUnlock()    </span><br><span class="line"></span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">&quot;read over&quot;</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">write</span><span class="params">(i <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">&quot;write start&quot;</span>)</span><br><span class="line"></span><br><span class="line">    m.Lock()</span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">&quot;writing&quot;</span>)</span><br><span class="line">    time.Sleep(<span class="number">1</span>*time.Second)</span><br><span class="line">    m.Unlock()</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println</span>(i,<span class="string">&quot;write over&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="原理剖析"><a href="#原理剖析" class="headerlink" title="原理剖析"></a>原理剖析</h1><h2 id="整体结构"><a href="#整体结构" class="headerlink" title="整体结构"></a>整体结构</h2><p>互斥源码所在位置：go/src/sync/rwmutex.go， RWMutex结构如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> RWMutex <span class="keyword">struct</span> &#123;</span><br><span class="line">	w           Mutex  <span class="comment">// 互斥锁</span></span><br><span class="line">	writerSem   <span class="type">uint32</span> <span class="comment">// 写锁信号</span></span><br><span class="line">	readerSem   <span class="type">uint32</span> <span class="comment">// 读锁信号（当写锁加上时，所有获取读锁的goutinue都会监听该信号，进行休眠等待。 写锁释放时，唤醒所有监听该信号的goroutinue）</span></span><br><span class="line">	readerCount <span class="type">int32</span>  <span class="comment">// 获取到读锁的数量</span></span><br><span class="line">	readerWait  <span class="type">int32</span>  <span class="comment">// 等待释放读锁的数量</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="写锁"><a href="#写锁" class="headerlink" title="写锁"></a>写锁</h2><h3 id="写锁加锁"><a href="#写锁加锁" class="headerlink" title="写锁加锁"></a>写锁加锁</h3><p>写锁加锁逻辑：</p>
+<ol>
+<li><p>获取读写锁的读锁数量，将读锁数量置为一个负数，准确值是：readerCount-rwmutexMaxReaders</p>
+</li>
+<li><p>如果读锁数量不为0，更新readerWait字段，将当前协程（获取写锁的线程）进行休眠，监听writerSem信号，等待所有读锁数量释放。</p>
+</li>
+</ol>
+<p>在读锁解锁逻辑里面，我们可以看到readerWait为0时，发出writerSem信号，唤醒获取写锁的协程。</p>
+<p>代码如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span></span> Lock() &#123;</span><br><span class="line">    <span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line">	rw.w.Lock()  <span class="comment">// 真实上锁，如果这里获取不到，在这里就会休眠。（见metux锁实现）</span></span><br><span class="line">	<span class="comment">// Announce to readers there is a pending writer.</span></span><br><span class="line">    r := atomic.AddInt32(&amp;rw.readerCount, -rwmutexMaxReaders) + rwmutexMaxReaders   <span class="comment">// 获取读锁数量，且将读锁数量置为一个负数，这里为什么要置为一个负数？见后续</span></span><br><span class="line">    </span><br><span class="line">	<span class="keyword">if</span> r != <span class="number">0</span> &amp;&amp; atomic.AddInt32(&amp;rw.readerWait, r) != <span class="number">0</span> &#123;  <span class="comment">// 如果读锁数量不为0， 将读锁数量累加到readerWait待释放读锁数量中，进行休眠（等待所有读锁数量释放，再进行后续操作）</span></span><br><span class="line">		runtime_SemacquireMutex(&amp;rw.writerSem, <span class="literal">false</span>, <span class="number">0</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123; <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">		race.Acquire(unsafe.Pointer(&amp;rw.readerSem))</span><br><span class="line">		race.Acquire(unsafe.Pointer(&amp;rw.writerSem))</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="写锁解锁"><a href="#写锁解锁" class="headerlink" title="写锁解锁"></a>写锁解锁</h3><p>写锁解锁逻辑：</p>
+<ol>
+<li>将读锁数量恢复正常，即负数-&gt;正数唤醒</li>
+<li>发出readerSem信号，唤醒所有监听该信号的协程</li>
+<li>执行解锁逻辑</li>
+</ol>
+<p>代码如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span></span> Unlock() &#123;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.Release(unsafe.Pointer(&amp;rw.readerSem))</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Announce to readers there is no active writer.</span></span><br><span class="line">    r := atomic.AddInt32(&amp;rw.readerCount, rwmutexMaxReaders)  <span class="comment">// 将读锁数量加上rwmutexMaxReaders，恢复正常数量，获取读锁数量</span></span><br><span class="line">    </span><br><span class="line">	<span class="keyword">if</span> r &gt;= rwmutexMaxReaders &#123;                         <span class="comment">// 读锁加锁数量如果大于最大读数量，抛出异常</span></span><br><span class="line">		race.Enable()</span><br><span class="line">		throw(<span class="string">&quot;sync: Unlock of unlocked RWMutex&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="type">int</span>(r); i++ &#123;                       <span class="comment">// 唤醒所有等待读锁的goroutinue（一旦写锁加上后，所有获取读锁的操作都会休眠）</span></span><br><span class="line">		runtime_Semrelease(&amp;rw.readerSem, <span class="literal">false</span>, <span class="number">0</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Allow other writers to proceed.</span></span><br><span class="line">	rw.w.Unlock()                                       <span class="comment">// 真实解锁，这里会唤醒其他等待写锁的goroutinue（见metux锁实现）</span></span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="读锁"><a href="#读锁" class="headerlink" title="读锁"></a>读锁</h2><h3 id="读锁加锁"><a href="#读锁加锁" class="headerlink" title="读锁加锁"></a>读锁加锁</h3><p>读锁加锁逻辑：</p>
+<ol>
+<li>将读锁数量加一</li>
+<li>如果读锁数量为负数时，即存在获取写锁的操作，将当前goroutinue休眠，监听readerSem信号，等待写锁释放时唤醒</li>
+</ol>
+<p>代码如下：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span></span> RLock() &#123;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> atomic.AddInt32(&amp;rw.readerCount, <span class="number">1</span>) &lt; <span class="number">0</span> &#123;  <span class="comment">// 读锁数量+1，如果读锁数量为负(某个routinue获取写锁，后面所有读锁只能休眠，等待写锁的完成)，休眠当前gouroutinue</span></span><br><span class="line">		runtime_SemacquireMutex(&amp;rw.readerSem, <span class="literal">false</span>, <span class="number">0</span>) <span class="comment">// 这里readerSem 数量为自增1</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123;  <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">		race.Acquire(unsafe.Pointer(&amp;rw.readerSem))</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="读锁解锁"><a href="#读锁解锁" class="headerlink" title="读锁解锁"></a>读锁解锁</h3><p>读锁写锁逻辑：</p>
+<ol>
+<li>将读锁数量减一</li>
+<li>读锁数量为负数，即当前存在获取写锁的goroutinue逻辑，将readerWait减一。</li>
+<li>readerWait == 0 即：获取所有人都释放读锁，发出writerSem信号，唤醒获取写锁的goroutinue。</li>
+</ol>
+<p>代码如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span></span> RUnlock() &#123;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123; <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		_ = rw.w.state</span><br><span class="line">		race.ReleaseMerge(unsafe.Pointer(&amp;rw.writerSem))</span><br><span class="line">		race.Disable()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> r := atomic.AddInt32(&amp;rw.readerCount, <span class="number">-1</span>); r &lt; <span class="number">0</span> &#123;   <span class="comment">// 读锁数量-1；小于0情况有两种，1.为加读锁，直接解锁。2. 某个线程将要获取写锁</span></span><br><span class="line">		rw.rUnlockSlow(r)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> race.Enabled &#123; <span class="comment">// 竞态分析，忽略</span></span><br><span class="line">		race.Enable()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rw *RWMutex)</span></span> rUnlockSlow(r <span class="type">int32</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> r+<span class="number">1</span> == <span class="number">0</span> || r+<span class="number">1</span> == -rwmutexMaxReaders &#123;   <span class="comment">// 如果r+1 == 0, 即r == -1, 未加读锁，直接解锁。 异常</span></span><br><span class="line">		race.Enable()                            <span class="comment">// 如果r+1 == -rwmutexMaxReaders， 即r == -(rwmutexMaxReaders+1)，这里就算是某个goroutinue将要获取写锁，将readerCount 置为 readerCount-rwmutexMaxReaders，这个数字也不会小于-rwmutexMaxReaders 异常</span></span><br><span class="line">		throw(<span class="string">&quot;sync: RUnlock of unlocked RWMutex&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// A writer is pending.</span></span><br><span class="line">	<span class="keyword">if</span> atomic.AddInt32(&amp;rw.readerWait, <span class="number">-1</span>) == <span class="number">0</span> &#123;   <span class="comment">// 某个goroutinue将要获取写锁，这里如果readerWait == 0，即 所有读锁全部解锁了，唤醒获取写锁的goroutinue</span></span><br><span class="line">		<span class="comment">// The last reader unblocks the writer.</span></span><br><span class="line">		runtime_Semrelease(&amp;rw.writerSem, <span class="literal">false</span>, <span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="https://www.svz.life">SVz</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://www.svz.life/p/2476363181.html">https://www.svz.life/p/2476363181.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://www.svz.life" target="_blank">SHIELD</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/mutex/">mutex</a><a class="post-meta__tags" href="/tags/RWmutex/">RWmutex</a></div><div class="post_share"><div class="social-share" data-image="/images/favicon.ico" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/p/3070668180.html" title="chrome_unsafe"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">chrome_unsafe</div></div></a></div><div class="next-post pull-right"><a href="/p/2de3d308.html" title="go-源码研读-sync_map"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">go-源码研读-sync_map</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/p/eecdb22f.html" title="go-源码研读-mutex"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-05-12</div><div class="title">go-源码研读-mutex</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/images/favicon.ico" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">SVz</div><div class="author-info__description">一个在折腾与被折腾之间的程序猿</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">136</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">33</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/SVz777"><i class="fab fa-github"></i><span>关注我</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/SVz777" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:svz@svz.life" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">生活总是猝不及防。</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%83%8C%E6%99%AF%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">背景介绍</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E7%94%A8%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">常见用法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90"><span class="toc-number">3.</span> <span class="toc-text">原理剖析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B4%E4%BD%93%E7%BB%93%E6%9E%84"><span class="toc-number">3.1.</span> <span class="toc-text">整体结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%99%E9%94%81"><span class="toc-number">3.2.</span> <span class="toc-text">写锁</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%99%E9%94%81%E5%8A%A0%E9%94%81"><span class="toc-number">3.2.1.</span> <span class="toc-text">写锁加锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%99%E9%94%81%E8%A7%A3%E9%94%81"><span class="toc-number">3.2.2.</span> <span class="toc-text">写锁解锁</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%BB%E9%94%81"><span class="toc-number">3.3.</span> <span class="toc-text">读锁</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%BB%E9%94%81%E5%8A%A0%E9%94%81"><span class="toc-number">3.3.1.</span> <span class="toc-text">读锁加锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%BB%E9%94%81%E8%A7%A3%E9%94%81"><span class="toc-number">3.3.2.</span> <span class="toc-text">读锁解锁</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/357679683.html" title="k8s安装">k8s安装</a><time datetime="2024-04-12T17:20:00.000Z" title="发表于 2024-04-12 17:20:00">2024-04-12</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/402035249.html" title="wireshark不显示vxlan协议">wireshark不显示vxlan协议</a><time datetime="2024-04-12T17:02:00.000Z" title="发表于 2024-04-12 17:02:00">2024-04-12</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/3903621862.html" title="go-asm-基础">go-asm-基础</a><time datetime="2021-09-21T21:15:05.000Z" title="发表于 2021-09-21 21:15:05">2021-09-21</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/2525441379.html" title="go-asm-反汇编">go-asm-反汇编</a><time datetime="2021-09-09T23:15:05.000Z" title="发表于 2021-09-09 23:15:05">2021-09-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/p/363974412.html" title="go-base-gomod">go-base-gomod</a><time datetime="2020-08-25T17:21:34.000Z" title="发表于 2020-08-25 17:21:34">2020-08-25</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2017 - 2024 By SVz</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text"><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn"><img class="icp-icon"/><span>鄂ICP备2022005628号-1</span></a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div></div></div><div id="search-mask"></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/medium-zoom/dist/medium-zoom.min.js"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><script>function panguFn () {
+  if (typeof pangu === 'object') pangu.autoSpacingPage()
+  else {
+    getScript('https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js')
+      .then(() => {
+        pangu.autoSpacingPage()
+      })
+  }
+}
+
+function panguInit () {
+  if (false){
+    GLOBAL_CONFIG_SITE.isPost && panguFn()
+  } else {
+    panguFn()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', panguInit)</script><script src="/js/search/local-search.js"></script><div class="js-pjax"><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script><script>function loadValine () {
+  function initValine () {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: 'tTi1GHfcl9y9NwxmwKUjroul-gzGzoHsz',
+      appKey: '1Qx8FFm1TFsG2XBlkjybkEUG',
+      avatar: 'monsterid',
+      serverURLs: '',
+      emojiMaps: "",
+      path: window.location.pathname,
+      visitor: false
+    }, null))
+  }
+
+  if (typeof Valine === 'function') initValine() 
+  else getScript('https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js').then(initValine)
+}
+
+if ('Valine' === 'Valine' || !true) {
+  if (true) btf.loadComment(document.getElementById('vcomment'),loadValine)
+  else setTimeout(loadValine, 0)
+} else {
+  function loadOtherComment () {
+    loadValine()
+  }
+}</script></div><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="true"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
